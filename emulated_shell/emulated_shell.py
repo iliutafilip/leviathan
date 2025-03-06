@@ -1,3 +1,4 @@
+from LLM.GPT4o_handler import GPT4oHandler
 from logger.logger import log_event
 import socket
 
@@ -11,6 +12,7 @@ class EmulatedShell:
         self.src_port = src_port
         self.channel = channel
         self.username = username
+        self.LLM = GPT4oHandler()
 
     def set_username(self, username):
         self.username = username
@@ -62,19 +64,31 @@ class EmulatedShell:
                     command=cmd_str
                 )
 
-                if command.strip() == b'exit':
+                if cmd_str.lower() == "exit":
                     self.channel.send(b"Goodbye!\n")
-                    log_event(
-                        event_type="session_terminated",
-                        session_id=self.session_id,
-                        src_ip=self.src_ip,
-                        src_port=self.src_port
-                    )
                     break
 
                 # TODO: LLM INTEGRATION
+                response = self.LLM.query_llm(cmd_str)
+                cleaned_response = response.strip() + "\n"
+                self.channel.send(cleaned_response.encode())
+
+                log_event(
+                    event_type="command_response",
+                    session_id=self.session_id,
+                    src_ip=self.src_ip,
+                    src_port=self.src_port,
+                    command=cmd_str,
+                    response=response
+                )
 
                 self.channel.send(prompt)
                 command = b""
 
         self.channel.close()
+        log_event(
+            event_type="session_terminated",
+            session_id=self.session_id,
+            src_ip=self.src_ip,
+            src_port=self.src_port
+        )
