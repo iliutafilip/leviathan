@@ -31,6 +31,6 @@ if __name__ == '__main__':
         if args.ssh:
             print(title)
             print("[-] Leviathan running...")
-            start_server(args.address, args.port, args.username, args.password)
+            start_server(args.address, args.port)
     except Exception as e:
         print(e)

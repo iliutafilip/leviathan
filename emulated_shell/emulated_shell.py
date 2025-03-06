@@ -1,29 +1,80 @@
+from logger.logger import log_event
+import socket
+
+
 class EmulatedShell:
 
-    def __init__(self, channel, session_id, src_ip, src_port):
+    def __init__(self, channel, session_id, src_ip, src_port, username):
+        print(f"[SHELL] Emulated shell initialized")
         self.session_id = session_id
         self.src_ip = src_ip
         self.src_port = src_port
         self.channel = channel
+        self.username = username
+
+    def set_username(self, username):
+        self.username = username
 
     def start_session(self):
-        self.channel.send(b'~$ ')
+
+        ssh_server_ip = socket.gethostbyname(socket.gethostname())
+
+        prompt = f"{self.username}@{ssh_server_ip}:~$ ".encode()
+
+        self.channel.send(prompt)
         command = b""
+
         while True:
             char = self.channel.recv(1)
-            self.channel.send(char)
-            if not char:
-                self.channel.close()
 
+            if not char:
+                print(f"[SHELL - DEBUG] Client with {self.src_ip}:{self.src_port} disconnected")
+                self.channel.send(b'\nConnection lost...\n')
+                log_event(
+                    event_type="session_disconnect",
+                    session_id=self.session_id,
+                    src_ip=self.src_ip,
+                    src_port=self.src_port
+                )
+                break
+
+            if char == b'\x7f':
+                if command:
+                    command = command[:-1]
+                    self.channel.send(b"\b \b")
+                continue
+
+            self.channel.send(char)
             command += char
 
-            response = ''
-
             if char == b'\r':
-                # command handling with LLM
-                if command.strip() == b'exit':
-                    self.channel.close()
+                self.channel.send(b'\n')
 
-                self.channel.send(response)
-                self.channel.send(b'~$ ')
+                cmd_str = command.strip().decode('utf-8')
+                print(f"[DEBUG - SHELL] Received command: {cmd_str} from {self.src_ip}")
+
+                log_event(
+                    event_type="command_input",
+                    session_id=self.session_id,
+                    src_ip=self.src_ip,
+                    src_port=self.src_port,
+                    username=self.username,
+                    command=cmd_str
+                )
+
+                if command.strip() == b'exit':
+                    self.channel.send(b"Goodbye!\n")
+                    log_event(
+                        event_type="session_terminated",
+                        session_id=self.session_id,
+                        src_ip=self.src_ip,
+                        src_port=self.src_port
+                    )
+                    break
+
+                # TODO: LLM INTEGRATION
+
+                self.channel.send(prompt)
                 command = b""
+
+        self.channel.close()
