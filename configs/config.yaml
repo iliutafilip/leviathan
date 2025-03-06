@@ -1,0 +1,3 @@
+authentication:
+  username_regex: "^(admin|root|user[0-9]+)$"
+  password_regex: "^(123456|password|qwerty|azert|robi|root)$"
