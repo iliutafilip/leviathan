@@ -62,13 +62,13 @@ class EmulatedShell:
                 )
 
                 if cmd_str.lower() == "exit":
-                    self.channel.send(b"Goodbye!\n")
+                    self.channel.send(b"Goodbye!\r\n")
                     break
 
                 # LLM INTEGRATION
                 try:
-                    response = self.llm_honeypot.execute_model(cmd_str)
-                    self.channel.send(response.encode() + b"\n")
+                    response = self.llm_honeypot.execute_model(cmd_str) + "\r\n"
+                    self.channel.send(response.encode())
                 except Exception as e:
                     self.channel.send(f"Error processing command: {str(e)}\n".encode())
 

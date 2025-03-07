@@ -1,16 +1,18 @@
-import json
 import re
-from enum import Enum, auto
+from enum import Enum
 from typing import List, Optional
 import requests
+import yaml
 
 
-with open("configs/plugins-config.yaml") as file:
+with open("/home/iliut/uni/licenta/configs/plugins-config.yaml") as file:
     config = yaml.safe_load(file)
 
-LLM_PROVIDER = config.get("plugin", {}).get("llmProvider", "openai")
-LLM_MODEL = config.get("plugin", {}).get("llmModel", "gpt-4o")
-OPENAI_SECRET_KEY = config.get("plugin", {}).get("openAISecretKey", "")
+
+LLM_PROVIDER = config.get("plugin").get("llmProvider")
+LLM_MODEL = config.get("plugin").get("llmModel")
+OPENAI_SECRET_KEY = config.get("plugin").get("openAISecretKey")
+
 
 class Role(Enum):
     SYSTEM = "system"
@@ -33,11 +35,11 @@ class Message:
 
 
 class LLMHoneypot:
-    SYSTEM_PROMPT_VIRTUALIZE_LINUX_TERMINAL = ("You will act as an Ubuntu Linux terminal. "
-              "The user will type commands, and you are to reply with what the terminal should show. "
-              "Your responses must be contained within a single code block. "
-              "Do not provide note. Do not provide explanations or type commands unless explicitly instructed by the user. "
-              "Your entire response/output is going to consist of a simple text with \n for new line, and you will NOT wrap it within string md markers."
+    SYSTEM_PROMPT = ("You will act as an Ubuntu Linux terminal. "
+                    "The user will type commands, and you are to reply with what the terminal should show. "
+                    "Your responses must be contained within a single code block. "
+                    "Do not provide note. Do not provide explanations or type commands unless explicitly instructed by the user. "
+                    "Your entire response/output is going to consist of a simple text with \n for new line, and you will NOT wrap it within string md markers."
             )
 
     OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
@@ -58,7 +60,7 @@ class LLMHoneypot:
 
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
-        prompt = self.SYSTEM_PROMPT_VIRTUALIZE_LINUX_TERMINAL if not self.custom_prompt else self.custom_prompt
+        prompt = self.SYSTEM_PROMPT if not self.custom_prompt else self.custom_prompt
 
         messages.append(Message(Role.SYSTEM, prompt))
         messages.append(Message(Role.USER, "pwd"))
@@ -99,7 +101,9 @@ class LLMHoneypot:
         if "choices" not in response_data or not response_data["choices"]:
             raise ValueError("No choices returned from OpenAI")
 
-        return self._remove_quotes(response_data["choices"][0]["message"]["content"])
+        final_response = self._remove_quotes(response_data["choices"][0]["message"]["content"])
+
+        return final_response
 
     def _ollama_caller(self, messages: List[Message]) -> str:
         payload = {
@@ -115,4 +119,5 @@ class LLMHoneypot:
 
     @staticmethod
     def _remove_quotes(content: str) -> str:
-        return re.sub(r'(```( *)?[a-z]*\n?)', "", content)
+        regex = re.compile(r"(```( *)?([a-z]*)?(\n)?)")
+        return regex.sub("", content)

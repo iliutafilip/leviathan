@@ -10,7 +10,7 @@ import yaml
 from logger.logger import log_event
 from emulated_shell.emulated_shell import EmulatedShell
 
-with open("configs/config.yaml", "r") as f:
+with open("/home/iliut/uni/licenta/configs/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 USERNAME_REGEX = config["authentication"]["username_regex"]
@@ -18,7 +18,7 @@ PASSWORD_REGEX = config["authentication"]["password_regex"]
 
 SSH_BANNER = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
 
-key_path = os.path.expanduser("configs/server.key")
+key_path = os.path.expanduser("/home/iliut/uni/licenta/configs/server.key")
 host_key = paramiko.RSAKey(filename=key_path, password="leviathan")
 
 class ClientHandler(paramiko.ServerInterface):
