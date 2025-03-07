@@ -1,4 +1,4 @@
-from LLM.GPT4o_handler import GPT4oHandler
+from LLM.LLM_integration import LLMHoneypot
 from logger.logger import log_event
 import socket
 
@@ -12,17 +12,14 @@ class EmulatedShell:
         self.src_port = src_port
         self.channel = channel
         self.username = username
-        self.LLM = GPT4oHandler()
+        self.llm_honeypot = LLMHoneypot()
 
     def set_username(self, username):
         self.username = username
 
     def start_session(self):
-
         ssh_server_ip = socket.gethostbyname(socket.gethostname())
-
         prompt = f"{self.username}@{ssh_server_ip}:~$ ".encode()
-
         self.channel.send(prompt)
         command = b""
 
@@ -68,19 +65,12 @@ class EmulatedShell:
                     self.channel.send(b"Goodbye!\n")
                     break
 
-                # TODO: LLM INTEGRATION
-                response = self.LLM.query_llm(cmd_str)
-                cleaned_response = response.strip() + "\n"
-                self.channel.send(cleaned_response.encode())
-
-                log_event(
-                    event_type="command_response",
-                    session_id=self.session_id,
-                    src_ip=self.src_ip,
-                    src_port=self.src_port,
-                    command=cmd_str,
-                    response=response
-                )
+                # LLM INTEGRATION
+                try:
+                    response = self.llm_honeypot.execute_model(cmd_str)
+                    self.channel.send(response.encode() + b"\n")
+                except Exception as e:
+                    self.channel.send(f"Error processing command: {str(e)}\n".encode())
 
                 self.channel.send(prompt)
                 command = b""
