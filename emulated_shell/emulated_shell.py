@@ -12,7 +12,7 @@ class EmulatedShell:
         self.src_port = src_port
         self.channel = channel
         self.username = username
-        self.llm_honeypot = LLMHoneypot()
+        self.llm_honeypot = LLMHoneypot(username, socket.gethostbyname(socket.gethostname()))
 
     def set_username(self, username):
         self.username = username
@@ -67,12 +67,13 @@ class EmulatedShell:
 
                 # LLM INTEGRATION
                 try:
-                    response = self.llm_honeypot.execute_model(cmd_str) + "\r\n"
+                    # response = self.llm_honeypot.execute_model(cmd_str) + "\r\n"
+                    response = self.llm_honeypot.execute_model(cmd_str)
                     self.channel.send(response.encode())
                 except Exception as e:
                     self.channel.send(f"Error processing command: {str(e)}\n".encode())
 
-                self.channel.send(prompt)
+                # self.channel.send(prompt)
                 command = b""
 
         self.channel.close()
