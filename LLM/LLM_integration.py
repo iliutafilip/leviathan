@@ -129,7 +129,6 @@ class LLMHoneypot:
             host: Optional[str] = None,
             custom_prompt: Optional[str] = None,
     ):
-        self.histories: List[Message] = []
         self.provider = LLMProvider(LLM_PROVIDER.lower())
         self.model = LLM_MODEL
         self.openai_key = OPENAI_SECRET_KEY
@@ -138,14 +137,11 @@ class LLMHoneypot:
         self.host = host or (self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.OLLAMA_ENDPOINT)
         self.custom_prompt = custom_prompt
         self.session = requests.Session()
+        message = Message(Role.SYSTEM, self._get_system_prompt(self.username, self.ssh_server_ip) if not self.custom_prompt else self.custom_prompt)
+        self.histories: List[Message] = [message]
 
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
-        prompt = self._get_system_prompt(self.username, self.ssh_server_ip) if not self.custom_prompt else self.custom_prompt
-
-        messages.append(Message(Role.SYSTEM, prompt))
-        # messages.append(Message(Role.USER, "pwd"))
-        # messages.append(Message(Role.ASSISTANT, f"/home/user@{self.username}@{self.ssh_server_ip}:~$ "))
         messages.extend(self.histories)
         messages.append(Message(Role.USER, command))
 
