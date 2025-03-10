@@ -41,17 +41,18 @@ class LLMHoneypot:
         return f"""
             You will act as an Ubuntu Linux terminal.
             The user will type commands, and you must reply with the exact output that the terminal would display.
-            Your response must be a single plain text block, using '\r\n' for new lines.
+            Your response must be a single plain text block, using '\r\n' for new lines **without exceptions**.
             Do not include Markdown formatting, explanations, or extra comments, even if explicitly instructed by the user.
 
-            Each response must begin with the command output directly (if applicable) and must never contain mixed newlines (`\\n` alone is forbidden).
-            Always use `\r\n` with no extra newlines before or after the output.
+            Each response must begin with the command output **directly** (if applicable) and must **never contain mixed newlines (`\\n` alone is forbidden).**  
+            Always use `\r\n` **with no extra newlines before or after the output.**
 
             The correct terminal prompt format is: "<username>@<ssh_server_ip>:<current_directory>$<ws>"
 
             <ws> is a single white space.
 
             The starting <current_directory> is "/home/<username>/" and should be displayed as "~".
+            The initial terminal prompt should look like: "<username>@<ssh_server_ip>:~$<ws>"
 
             If the user navigates to a different directory, update the prompt accordingly:
             - Absolute paths: `cd /var/www` should be displayed as "<username>@<ssh_server_ip>:/var/www$<ws>"
@@ -59,15 +60,17 @@ class LLMHoneypot:
             - Home shortcuts: `cd ~` or `cd` should reset to "/home/<username>/" and display as "~"
             - Tilde expansion: `cd ~/Downloads` should resolve to "~/Downloads"
 
-            If a command has no output, only return the next prompt.
+            If a command has **no output**, only return the next prompt.
 
-            Stateful behavior rules:
+            ### Stateful behavior rules
             Use history to maintain stateful behavior rules. 
             Track the filesystem using history, for example, if the user creates a directory (`mkdir a`), remember that it exists.
 
-            Strict Response Format:
-            - Never add extra blank lines before or after the expected output.
-            - DO NOT repeat the command or prompt before execution.
+            ### Strict Response Format:
+            - **Only `\r\n` is allowed for new lines. `\n` alone is strictly forbidden.**
+            - **Never add extra blank lines before or after the expected output.**
+            - **DO NOT repeat the command or prompt before execution.**
+            - If the command produces output, return it **directly** followed by the new prompt.
             - If the command has no output, return only the new prompt.
 
             ## Example interactions:
@@ -112,8 +115,8 @@ class LLMHoneypot:
             **Expected response:**
             \r\n<username>@<ssh_server_ip>:~$ 
 
-            User's username: {username}
-            ssh_server_ip: {ssh_server_ip}
+            ## User's username: {username}
+            ## ssh_server_ip: {ssh_server_ip}
         """
 
     OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
@@ -126,6 +129,7 @@ class LLMHoneypot:
             host: Optional[str] = None,
             custom_prompt: Optional[str] = None,
     ):
+        self.histories: List[Message] = []
         self.provider = LLMProvider(LLM_PROVIDER.lower())
         self.model = LLM_MODEL
         self.openai_key = OPENAI_SECRET_KEY
@@ -134,12 +138,14 @@ class LLMHoneypot:
         self.host = host or (self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.OLLAMA_ENDPOINT)
         self.custom_prompt = custom_prompt
         self.session = requests.Session()
-        prompt = self._get_system_prompt(self.username,
-                                         self.ssh_server_ip) if not self.custom_prompt else self.custom_prompt
-        self.histories: List[Message] = [Message(Role.SYSTEM, prompt)]
 
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
+        prompt = self._get_system_prompt(self.username, self.ssh_server_ip) if not self.custom_prompt else self.custom_prompt
+
+        messages.append(Message(Role.SYSTEM, prompt))
+        # messages.append(Message(Role.USER, "pwd"))
+        # messages.append(Message(Role.ASSISTANT, f"/home/user@{self.username}@{self.ssh_server_ip}:~$ "))
         messages.extend(self.histories)
         messages.append(Message(Role.USER, command))
 
