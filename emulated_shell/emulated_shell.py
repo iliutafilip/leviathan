@@ -37,14 +37,6 @@ class EmulatedShell:
                 )
                 break
 
-            if char == b'\x1b':
-                seq = self.channel.recv(2)
-                if seq in [b'[A', b'[B', b'[C', b'[D']:
-                    continue
-
-            if char < b' ' and char not in [b'\r', b'\x7f']:
-                continue
-
             if char == b'\x7f':
                 if command:
                     command = command[:-1]
