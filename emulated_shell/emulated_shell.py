@@ -70,7 +70,6 @@ class EmulatedShell:
                 )
 
                 if cmd_str.lower() == "exit":
-                    self.channel.send(b"Goodbye!\r\n")
                     break
 
                 # LLM INTEGRATION

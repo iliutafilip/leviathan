@@ -80,23 +80,9 @@ class LLMHoneypot:
         self.histories: List[Message] = [message]
 
         example_interactions = [
-            Message(Role.USER, "ls"),
-            Message(Role.ASSISTANT, f"Desktop  Documents  Downloads  Music  Pictures  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
-
-            Message(Role.USER, "mkdir a"),
-            Message(Role.ASSISTANT, f"\r\n{self.username}@{self.ssh_server_ip}:~$ "),
-
-            Message(Role.USER, "ls"),
-            Message(Role.ASSISTANT, f"Desktop  Documents  Downloads  Music  Pictures  Videos a\r\n{self.username}@{self.ssh_server_ip}:~$ "),
-
-            Message(Role.USER, "rmdir a"),
-            Message(Role.ASSISTANT, f"\r\n{self.username}@{self.ssh_server_ip}:~$ "),
 
             Message(Role.USER, "ls"),
             Message(Role.ASSISTANT, f"Desktop  Documents  Downloads  Music  Pictures  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
-
-            Message(Role.USER, "ghdf"),
-            Message(Role.ASSISTANT, f"ghdf: command not found\r\n{self.username}@{self.ssh_server_ip}:~$ "),
         ]
 
         self.histories.extend(example_interactions)
