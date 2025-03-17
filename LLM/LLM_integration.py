@@ -4,6 +4,8 @@ from typing import List, Optional
 import requests
 import yaml
 
+from store.user_history_store import UserHistoryStore
+
 with open("configs/plugins-config.yaml") as file:
     config = yaml.safe_load(file)
 
@@ -76,22 +78,41 @@ class LLMHoneypot:
 
         self.api_endpoint = self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.DEEPSEEK_ENDPOINT
 
-        message = Message(Role.SYSTEM, self._get_system_prompt(self.username,
-                                                               self.ssh_server_ip) if not self.custom_prompt else self.custom_prompt)
-        self.histories: List[Message] = [message]
+        self.histories: List[Message] = self._load_user_history()
 
-        example_interactions = [
-            Message(Role.USER, "ls"),
-            Message(Role.ASSISTANT,f"Desktop  Documents  Downloads  Music  Pictures  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
+        if not self.histories:
+            system_message = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip))
+            self.histories.append(system_message)
+
+            example_interactions = [
+                Message(Role.USER, "ls"),
+                Message(Role.ASSISTANT,
+                        f"Desktop  Documents  Downloads  Music  Pictures  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
+            ]
+            self.histories.extend(example_interactions)
+
+            self._save_user_history()
+
+    def _load_user_history(self) -> List[Message]:
+        history = UserHistoryStore.load_user_history(self.username)
+
+        if history:
+            return [
+                Message(Role(entry["role"]), entry["content"]) for entry in history
+            ]
+
+        return []
+
+    def _save_user_history(self):
+        history_data = [
+            {"role": msg.role, "content": msg.content} for msg in self.histories
         ]
-
-        self.histories.extend(example_interactions)
+        UserHistoryStore.save_user_history(self.username, history_data)
 
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
         messages.extend(self.histories)
         messages.append(Message(Role.USER, command))
-
         return messages
 
     def execute_model(self, command: str) -> str:
@@ -104,6 +125,8 @@ class LLMHoneypot:
 
         self.histories.append(Message(Role.USER, command))
         self.histories.append(Message(Role.ASSISTANT, response))
+
+        self._save_user_history()
 
         return response
 
