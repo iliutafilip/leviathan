@@ -1,3 +1,4 @@
+import os
 import re
 from enum import Enum
 from typing import List, Optional
@@ -9,9 +10,9 @@ from store.user_history_store import UserHistoryStore
 with open("configs/plugins-config.yaml") as file:
     config = yaml.safe_load(file)
 
-LLM_PROVIDER = config.get("plugin").get("llmProvider")
-LLM_MODEL = config.get("plugin").get("llmModel")
-API_SECRET_KEY = config.get("plugin").get("openAISecretKey")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", config.get("plugin", {}).get("llmProvider", "openai")).lower()
+LLM_MODEL = os.getenv("LLM_MODEL", config.get("plugin", {}).get("llmModel", "gpt-4"))
+API_SECRET_KEY = os.getenv("OPEN_AI_SECRET_KEY", config.get("plugin", {}).get("openAISecretKey"))
 
 
 class Role(Enum):

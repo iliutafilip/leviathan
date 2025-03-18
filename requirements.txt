@@ -1,0 +1,4 @@
+paramiko
+pyyaml
+requests
+google-cloud-firestore

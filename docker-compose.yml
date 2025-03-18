@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  leviathan:
+    build: .
+    container_name: leviathan
+    restart: always
+    ports:
+      - "2222:22"
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    environment:
+      LLM_MODEL: ${LLM_MODEL}
+      OPEN_AI_SECRET_KEY: ${OPEN_AI_SECRET_KEY}
+    env_file:
+      - .env
+    networks:
+        - honeypot-net
+
+networks:
+  honeypot-net:

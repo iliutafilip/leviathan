@@ -3,10 +3,12 @@ import os
 import shutil
 from datetime import datetime
 
+LOG_DIR = "logs"
 BASE_LOG_FILE_NAME = "leviathan"
-LOG_FILE = f"{BASE_LOG_FILE_NAME}.log"
+LOG_FILE = os.path.join(LOG_DIR, f"{BASE_LOG_FILE_NAME}.log")
 MAX_LOG_SIZE = 1024 * 1024 * 40 # 40MB
 
+os.makedirs(LOG_DIR, exist_ok=True)
 
 def rotate_log():
     """
@@ -69,8 +71,13 @@ def log_event(event_type: str,
     if success is not None:
         log_entry["success"] = success
 
+    log_json = json.dumps(log_entry)
+
+    # Write to log file
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps(log_entry) + "\n")
+        f.write(log_json + "\n")
+
+    print(log_json, file=sys.stdout)
 
 
 def clear_log_file():
