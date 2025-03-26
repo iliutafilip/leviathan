@@ -110,6 +110,14 @@ class LLMHoneypot:
         ]
         UserHistoryStore.save_user_history(self.username, history_data)
 
+    def _add_to_user_history(self, user_msg: Message, assistant_msg: Message):
+        data = [
+            {"role": user_msg.role, "content": user_msg.content},
+            {"role": assistant_msg.role, "content": assistant_msg.content},
+        ]
+        UserHistoryStore.save_user_history(self.username, data)
+
+
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
         messages.extend(self.histories)
@@ -124,10 +132,13 @@ class LLMHoneypot:
         else:
             raise ValueError("Invalid LLM Provider")
 
-        self.histories.append(Message(Role.USER, command))
-        self.histories.append(Message(Role.ASSISTANT, response))
+        user_msg = Message(Role.USER, command)
+        assistant_msg = Message(Role.ASSISTANT, response)
 
-        self._save_user_history()
+        self.histories.append(user_msg)
+        self.histories.append(assistant_msg)
+
+        self._add_to_user_history(user_msg, assistant_msg)
 
         return response
 

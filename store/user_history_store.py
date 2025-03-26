@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from google.cloud import firestore
 import yaml
 
@@ -25,3 +27,23 @@ class UserHistoryStore:
     def save_user_history(username, history):
         """Save user session history to Firestore."""
         SESSION_COLLECTION.document(username).set({"history": history})
+
+    @staticmethod
+    def add_to_user_history(username, data):
+        """
+        Adds user's command and server's response to user's session history to Firestore.
+        Updates cleanup_timestamp at every interaction.
+        """
+        doc_ref = SESSION_COLLECTION.document(username)
+        doc = doc_ref.get()
+
+        history = doc.to_dict().get("history", []) if doc.exists else []
+        updated_history = history + data
+
+        cleanup_timestamp = datetime.now() + timedelta(hours=1)
+
+        doc_ref.set({
+            "history": updated_history,
+            "expireAt": cleanup_timestamp
+        }, merge=True)
+

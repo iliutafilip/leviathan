@@ -6,7 +6,7 @@ services:
     container_name: leviathan
     restart: always
     ports:
-      - "2222:22"
+      - "2222:2222"
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
@@ -15,8 +15,3 @@ services:
       OPEN_AI_SECRET_KEY: ${OPEN_AI_SECRET_KEY}
     env_file:
       - .env
-    networks:
-        - honeypot-net
-
-networks:
-  honeypot-net:
