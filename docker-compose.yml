@@ -4,7 +4,7 @@ services:
   leviathan:
     build: .
     container_name: leviathan
-    restart: always
+#    restart: always
     ports:
       - "2222:2222"
     volumes:

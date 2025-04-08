@@ -14,8 +14,6 @@ class EmulatedShell:
         self.username = username
         self.llm_honeypot = LLMHoneypot(username, socket.gethostbyname(socket.gethostname()))
 
-    def set_username(self, username):
-        self.username = username
 
     def start_session(self):
         ssh_server_ip = socket.gethostbyname(socket.gethostname())

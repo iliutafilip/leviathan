@@ -1,49 +1,73 @@
+import sqlite3
+import threading
+import time
 from datetime import datetime, timedelta
 
-from google.cloud import firestore
-import yaml
-
-with open("configs/db-config.yaml") as file:
-    db_config = yaml.safe_load(file)
-
-CREDENTIALS_FILE_PATH = db_config.get("firebase-credentials-path")
-COLLECTION_NAME = db_config.get("firebase-collection-name")
-
-DATABASE = firestore.Client.from_service_account_json(CREDENTIALS_FILE_PATH)
-SESSION_COLLECTION = DATABASE.collection(COLLECTION_NAME)
 
 class UserHistoryStore:
-    """Handles Firestore interactions for storing user session history."""
 
-    @staticmethod
-    def load_user_history(username):
-        """Retrieve user session history from Firestore."""
-        doc = SESSION_COLLECTION.document(username).get()
-        if doc.exists:
-            return doc.to_dict().get("history", [])
-        return []
+    def __init__(self, db_path = "store/user_history.db"):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.lock = threading.Lock()
+        self._create_tables()
 
-    @staticmethod
-    def save_user_history(username, history):
-        """Save user session history to Firestore."""
-        SESSION_COLLECTION.document(username).set({"history": history})
+    def _create_tables(self):
+        with self.lock:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    expire_at TEXT
+                )
+            """)
+            self.conn.commit()
 
-    @staticmethod
-    def add_to_user_history(username, data):
-        """
-        Adds user's command and server's response to user's session history to Firestore.
-        Updates cleanup_timestamp at every interaction.
-        """
-        doc_ref = SESSION_COLLECTION.document(username)
-        doc = doc_ref.get()
+    def add_to_user_history(self, username, data):
+        expire_at = (datetime.now() + timedelta(hours=1)).isoformat()
+        with self.lock:
+            for entry in data:
+                self.conn.execute("""
+                    INSERT INTO history (username, role, message, expire_at)
+                    VALUES (?, ?, ?, ?)
+                """, (username, entry["role"], entry["message"], expire_at))
+            self.conn.commit()
 
-        history = doc.to_dict().get("history", []) if doc.exists else []
-        updated_history = history + data
+    def load_user_history(self, username):
+        with self.lock:
+            now = datetime.now().isoformat()
+            cursor = self.conn.execute("""
+                SELECT role, message FROM history
+                WHERE username = ? AND (expire_at IS NULL OR expire_at > ?)
+                ORDER BY id
+            """, (username, now))
+            return [{"role": role, "message": message} for role, message in cursor.fetchall()]
 
-        cleanup_timestamp = datetime.now() + timedelta(hours=1)
+    def cleanup(self):
+        with self.lock:
+            now = datetime.now().isoformat()
+            self.conn.execute("DELETE FROM history WHERE expire_at IS NOT NULL AND expire_at <= ?", (now,))
+            self.conn.commit()
 
-        doc_ref.set({
-            "history": updated_history,
-            "expireAt": cleanup_timestamp
-        }, merge=True)
 
+
+def start_cleanup_loop(store: UserHistoryStore, period: int = 1800):
+    '''
+    starts a loop which periodically cleans up the user's history
+    default period is 30 minutes
+    :param store: user history store
+    :param period: period length in seconds; default is 1800s = 30min
+    :return:
+    '''
+    def cleanup_loop():
+        while True:
+            try:
+                store.cleanup()
+            except Exception as e:
+                print(f"[-] Cleanup error: {e}")
+            time.sleep(period)
+
+    thread = threading.Thread(target=cleanup_loop, daemon=True)
+    thread.start()

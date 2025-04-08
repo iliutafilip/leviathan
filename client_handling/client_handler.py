@@ -6,6 +6,7 @@ import socket
 import paramiko
 import re
 import yaml
+from paramiko.rsakey import RSAKey
 
 from logger.logger import log_event
 from emulated_shell.emulated_shell import EmulatedShell
@@ -19,11 +20,16 @@ PASSWORD_REGEX = config["authentication"]["password_regex"]
 SSH_BANNER = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
 
 key_path = os.path.expanduser("configs/server.key")
-host_key = paramiko.RSAKey(filename=key_path, password="leviathan")
+
+if not os.path.exists(key_path):
+    print("[INFO] Generating new RSA host key...")
+    RSAKey.generate(2048).write_private_key_file(key_path)
+
+host_key = RSAKey(filename=key_path)
 
 class ClientHandler(paramiko.ServerInterface):
 
-    def __init__(self, client_ip, client_port, client_version, dst_ip, dst_port):
+    def __init__(self, client_ip, client_port, client_version, dst_ip, dst_port, input_username = None,):
         self.session_id = str(uuid.uuid4())
         self.client_ip = client_ip
         self.client_port = client_port
@@ -32,6 +38,7 @@ class ClientHandler(paramiko.ServerInterface):
         self.dst_port = dst_port
         self.event = threading.Event()
         self.emulated_shell = None
+        self.input_username = input_username
 
         log_event(
             event_id="session_start",

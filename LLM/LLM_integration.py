@@ -76,9 +76,8 @@ class LLMHoneypot:
         self.ssh_server_ip = ssh_server_ip
         self.custom_prompt = custom_prompt
         self.session = requests.Session()
-
         self.api_endpoint = self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.DEEPSEEK_ENDPOINT
-
+        self. history_store = UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
 
         if not self.histories:
@@ -95,28 +94,18 @@ class LLMHoneypot:
             self._save_user_history()
 
     def _load_user_history(self) -> List[Message]:
-        history = UserHistoryStore.load_user_history(self.username)
-
-        if history:
-            return [
-                Message(Role(entry["role"]), entry["content"]) for entry in history
-            ]
-
-        return []
+        history_data = self.history_store.load_user_history(self.username)
+        return [Message(Role(entry["role"]), entry["message"]) for entry in history_data]
 
     def _save_user_history(self):
-        history_data = [
-            {"role": msg.role, "content": msg.content} for msg in self.histories
-        ]
-        UserHistoryStore.save_user_history(self.username, history_data)
+        data = [{"role": msg.role, "message": msg.content} for msg in self.histories]
+        self.history_store.add_to_user_history(self.username, data)
 
     def _add_to_user_history(self, user_msg: Message, assistant_msg: Message):
-        data = [
-            {"role": user_msg.role, "content": user_msg.content},
-            {"role": assistant_msg.role, "content": assistant_msg.content},
-        ]
-        UserHistoryStore.save_user_history(self.username, data)
-
+        self.history_store.add_to_user_history(self.username, [
+            {"role": user_msg.role, "message": user_msg.content},
+            {"role": assistant_msg.role, "message": assistant_msg.content},
+        ])
 
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
