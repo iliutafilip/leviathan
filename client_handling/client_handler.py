@@ -23,20 +23,30 @@ host_key = paramiko.RSAKey(filename=key_path, password="leviathan")
 
 class ClientHandler(paramiko.ServerInterface):
 
-    def __init__(self, client_ip, client_port, input_username = None, input_password = None):
+    def __init__(self, client_ip, client_port, client_version, dst_ip, dst_port):
         self.session_id = str(uuid.uuid4())
         self.client_ip = client_ip
         self.client_port = client_port
-        self.input_username = input_username
-        self.input_password = input_password
+        self.client_version = client_version
+        self.dst_ip = dst_ip
+        self.dst_port = dst_port
         self.event = threading.Event()
         self.emulated_shell = None
 
         log_event(
-            event_type="session_start",
+            event_id="session_start",
             session_id=self.session_id,
             src_ip=self.client_ip,
-            src_port=self.client_port
+            src_port=self.client_port,
+            dst_ip=self.dst_ip,
+            dst_port=self.dst_port,
+        )
+
+        log_event(
+            event_id="client_version",
+            session_id=self.session_id,
+            src_ip=client_ip,
+            src_port=client_port,
         )
 
     def get_session_id(self):
@@ -64,19 +74,25 @@ class ClientHandler(paramiko.ServerInterface):
 
         print(f"[-] Login attempt: {username}:{password} from {self.client_ip} - {'SUCCESS' if success else 'FAILED'}")
 
-        log_event(
-            event_type="login_attempt",
-            session_id=self.session_id,
-            src_ip=self.client_ip,
-            src_port=self.client_port,
-            username=username,
-            password=password,
-            success=success
-        )
-
         if success:
+            log_event(
+                event_id="login_success",
+                session_id=self.session_id,
+                src_ip=self.client_ip,
+                src_port=self.client_port,
+                username=username,
+                password=password,
+            )
             return paramiko.common.AUTH_SUCCESSFUL
         else:
+            log_event(
+                event_id="login_failed",
+                session_id=self.session_id,
+                src_ip=self.client_ip,
+                src_port=self.client_port,
+                username=username,
+                password=password,
+            )
             return paramiko.common.AUTH_FAILED
 
 
@@ -94,7 +110,7 @@ class ClientHandler(paramiko.ServerInterface):
         print(f"[CLIENT HANDLER - DEBUG] Exec request received from {self.client_ip}:{self.client_port}")
         command = command.decode()
         log_event(
-            event_type="command_exec",
+            event_id="command_exec",
             session_id=self.session_id,
             src_ip=self.client_ip,
             src_port=self.client_port,
@@ -104,8 +120,9 @@ class ClientHandler(paramiko.ServerInterface):
 
 
 def client_handle(client, addr):
-    client_ip = addr[0]
-    client_port = addr[1]
+    client_ip, client_port = addr
+    dst_ip, dst_port = client.getsockname()
+
     transport = None
 
     try:
@@ -113,7 +130,9 @@ def client_handle(client, addr):
         transport = paramiko.Transport(client)
         transport.local_version = SSH_BANNER
 
-        server = ClientHandler(client_ip, client_port)
+        client_version = transport.remote_version
+
+        server = ClientHandler(client_ip, client_port, client_version, dst_ip, dst_port)
 
         transport.add_server_key(host_key)
 

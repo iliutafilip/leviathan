@@ -30,7 +30,7 @@ class EmulatedShell:
                 print(f"[SHELL - DEBUG] Client with {self.src_ip}:{self.src_port} disconnected")
                 self.channel.send(b'\nConnection lost...\n')
                 log_event(
-                    event_type="session_disconnect",
+                    event_id="session_disconnect",
                     session_id=self.session_id,
                     src_ip=self.src_ip,
                     src_port=self.src_port
@@ -61,7 +61,7 @@ class EmulatedShell:
                 print(f"[DEBUG - SHELL] Received command: {cmd_str} from {self.src_ip}")
 
                 log_event(
-                    event_type="command_input",
+                    event_id="command_input",
                     session_id=self.session_id,
                     src_ip=self.src_ip,
                     src_port=self.src_port,
@@ -74,18 +74,16 @@ class EmulatedShell:
 
                 # LLM INTEGRATION
                 try:
-                    # response = self.llm_honeypot.execute_model(cmd_str) + "\r\n"
                     response = self.llm_honeypot.execute_model(cmd_str)
                     self.channel.send(response.encode())
                 except Exception as e:
                     self.channel.send(f"Error processing command: {str(e)}\n".encode())
 
-                # self.channel.send(prompt)
                 command = b""
 
         self.channel.close()
         log_event(
-            event_type="session_terminated",
+            event_id="session_terminated",
             session_id=self.session_id,
             src_ip=self.src_ip,
             src_port=self.src_port

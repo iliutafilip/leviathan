@@ -22,43 +22,47 @@ def rotate_log():
         shutil.move(LOG_FILE, new_log_name)
 
 
-def log_event(event_type: str,
+def log_event(event_id: str,
               session_id: str,
               src_ip: str = None,
               src_port: int = None,
+              dst_ip: str = None,
+              dst_port: int = None,
               protocol: str = None,
               username: str = None,
               password: str = None,
               command: str = None,
-              response: str = None,
-              success: bool = None,
               ) -> None:
     """
     Logs an event in JSON format.
 
-    :param event_type: event type, (e.g.: "session_start", "login_attempt")
+    :param event_id: event type ("session_start", "login_attempt", ...)
     :param session_id: session ID
     :param src_ip: source IP address
     :param src_port: source port
-    :param protocol: used protocol (e.g.: "ssh", "telnet")
-    :param username: username used for logger in
-    :param password: password used for logger in
+    :param dst_ip: destination IP address
+    :param dst_port: destination port
+    :param protocol: used protocol
+    :param username: username used for logging in
+    :param password: password used for logging in
     :param command: input command
-    :param response: leviathan's response
-    :param success: True/False
     """
 
     rotate_log()
 
     log_entry = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "event_type": event_type,
+        "event_type": event_id,
         "session_id": session_id,
         "src_ip": src_ip
     }
 
     if src_port is not None:
         log_entry["src_port"] = src_port
+    if dst_ip is not None:
+        log_entry["dst_ip"] = dst_ip
+    if dst_port is not None:
+        log_entry["dst_port"] = dst_port
     if protocol is not None:
         log_entry["protocol"] = protocol
     if username is not None:
@@ -67,14 +71,9 @@ def log_event(event_type: str,
         log_entry["password"] = password
     if command is not None:
         log_entry["command"] = command
-    if response is not None:
-        log_entry["response"] = response
-    if success is not None:
-        log_entry["success"] = success
 
     log_json = json.dumps(log_entry)
 
-    # Write to log file
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(log_json + "\n")
 
