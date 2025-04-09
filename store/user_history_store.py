@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 class UserHistoryStore:
 
     def __init__(self, db_path = "store/user_history.db"):
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.db_path = db_path
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.lock = threading.Lock()
         self._create_tables()
 

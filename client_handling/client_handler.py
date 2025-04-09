@@ -49,13 +49,6 @@ class ClientHandler(paramiko.ServerInterface):
             dst_port=self.dst_port,
         )
 
-        log_event(
-            event_id="client_version",
-            session_id=self.session_id,
-            src_ip=client_ip,
-            src_port=client_port,
-        )
-
     def get_session_id(self):
         return self.session_id
 
@@ -137,13 +130,20 @@ def client_handle(client, addr):
         transport = paramiko.Transport(client)
         transport.local_version = SSH_BANNER
 
-        client_version = transport.remote_version
-
-        server = ClientHandler(client_ip, client_port, client_version, dst_ip, dst_port)
+        server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port)
 
         transport.add_server_key(host_key)
 
         transport.start_server(server=server)
+
+        server.client_version = transport.remote_version
+        log_event(
+            event_id="client_version",
+            session_id=server.session_id,
+            src_ip=client_ip,
+            src_port=client_port,
+            message=server.client_version,
+        )
 
         channel = transport.accept(100)
 

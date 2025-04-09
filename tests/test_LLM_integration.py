@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from LLM.LLM_integration import LLMHoneypot
+from store.user_history_store import UserHistoryStore
 
 
 class TestLLMHoneypotIntegration(unittest.TestCase):
@@ -19,7 +20,11 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
             ]
         }
         mock_post.return_value = mock_response
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="provider", api_key="api_key", model="model")
+
+        user_history = UserHistoryStore("store/test_user_history.db")
+        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key", model="model", history_store=user_history)
+
+        print(honeypot.provider)
 
         output = honeypot.execute_model("ls")
         self.assertIn("mock", output)
@@ -31,17 +36,25 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_response.json.return_value = {"choices": []}
         mock_post.return_value = mock_response
 
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="provider", api_key="api_key",
-                               model="model")
+        user_history = UserHistoryStore("store/test_user_history.db")
+        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key", model="model", history_store=user_history)
 
         with self.assertRaises(ValueError) as context:
             honeypot.execute_model("ls")
 
         self.assertIn("No choices", str(context.exception))
 
+    def test_invalid_provider(self):
+        with self.assertRaises(ValueError) as context:
+            LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="provider")
+
+        self.assertIn("not a valid LLMProvider", str(context.exception))
+
+
     def test_custom_prompt_build(self):
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="provider", api_key="api_key",
-                               model="model", custom_prompt="act as a linux ubuntu shell")
+        user_history = UserHistoryStore("store/test_user_history.db")
+        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key",
+                               model="model", custom_prompt="act as a linux ubuntu shell", history_store=user_history)
 
         self.assertEqual("act as a linux ubuntu shell", honeypot.custom_prompt)
 

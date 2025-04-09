@@ -70,17 +70,18 @@ class LLMHoneypot:
             custom_prompt: Optional[str] = None,
             provider = None,
             model = None,
-            api_key = None
+            api_key = None,
+            history_store = None,
     ):
-        self.provider = LLMProvider(LLM_PROVIDER.lower())
-        self.model = LLM_MODEL
-        self.api_key = API_SECRET_KEY
+        self.provider = LLMProvider(LLM_PROVIDER.lower()) if provider is None else LLMProvider(provider.lower())
+        self.model = model or LLM_MODEL
+        self.api_key = api_key or API_SECRET_KEY
         self.username = username
         self.ssh_server_ip = ssh_server_ip
         self.custom_prompt = custom_prompt
         self.session = requests.Session()
         self.api_endpoint = self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.DEEPSEEK_ENDPOINT
-        self. history_store = UserHistoryStore()
+        self.history_store = history_store or UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
         self.sys_prompt = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip) if self.custom_prompt is None else self.custom_prompt)
 
@@ -95,6 +96,14 @@ class LLMHoneypot:
             self.histories.extend(example_interactions)
 
             self._save_user_history()
+
+        start_up = [
+            Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip)),
+            Message(Role.USER, "cd"),
+            Message(Role.ASSISTANT, f"\r\n{self.username}@{self.ssh_server_ip}:~$ "),
+        ]
+
+        self.histories.extend(start_up)
 
     def _load_user_history(self) -> List[Message]:
         history_data = self.history_store.load_user_history(self.username)
