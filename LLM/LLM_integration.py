@@ -68,6 +68,9 @@ class LLMHoneypot:
             username: str = "unknown",
             ssh_server_ip: str = "127.0.0.1",
             custom_prompt: Optional[str] = None,
+            provider = None,
+            model = None,
+            api_key = None
     ):
         self.provider = LLMProvider(LLM_PROVIDER.lower())
         self.model = LLM_MODEL
@@ -79,10 +82,10 @@ class LLMHoneypot:
         self.api_endpoint = self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.DEEPSEEK_ENDPOINT
         self. history_store = UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
+        self.sys_prompt = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip) if self.custom_prompt is None else self.custom_prompt)
 
         if not self.histories:
-            system_message = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip))
-            self.histories.append(system_message)
+            self.histories.append(self.sys_prompt)
 
             example_interactions = [
                 Message(Role.USER, "ls"),
@@ -110,6 +113,7 @@ class LLMHoneypot:
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
         messages.extend(self.histories)
+        messages.append(self.sys_prompt)
         messages.append(Message(Role.USER, command))
         return messages
 
@@ -132,7 +136,7 @@ class LLMHoneypot:
         return response
 
     def _api_caller(self, messages: List[Message]):
-        if not self.api_key:
+        if self.api_key is None:
             raise ValueError("API key is required")
 
         payload, headers = self._create_payload(messages)

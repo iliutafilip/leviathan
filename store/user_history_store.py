@@ -16,7 +16,7 @@ class UserHistoryStore:
             cursor = self.conn.cursor()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     username TEXT NOT NULL,
                     role TEXT NOT NULL,
                     message TEXT NOT NULL,
