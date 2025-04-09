@@ -1,4 +1,4 @@
 plugin:
   llmProvider: "openai"
-  llmModel: "ft:gpt-4o-2024-08-06:my-org:unix-shell:BBLTnk8Q"
-  openAISecretKey: "sk-proj-"
+  llmModel: "gpt-4o"
+  openAISecretKey: "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"
