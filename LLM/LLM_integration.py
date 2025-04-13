@@ -4,6 +4,8 @@ from enum import Enum
 from typing import List, Optional
 import requests
 import yaml
+from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from store.user_history_store import UserHistoryStore
 
@@ -12,7 +14,7 @@ with open("configs/plugins-config.yaml") as file:
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", config.get("plugin", {}).get("llmProvider", "openai")).lower()
 LLM_MODEL = os.getenv("LLM_MODEL", config.get("plugin", {}).get("llmModel", "gpt-4"))
-API_SECRET_KEY = os.getenv("OPEN_AI_SECRET_KEY", config.get("plugin", {}).get("openAISecretKey"))
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", config.get("plugin", {}).get("apiSecretKey"))
 
 
 class Role(Enum):
@@ -24,6 +26,7 @@ class Role(Enum):
 class LLMProvider(Enum):
     OPENAI = "openai"
     DEEPSEEK = "deepseek"
+    GROK = "grok"
     INVALID_PROVIDER = "invalid_provider"
 
 
@@ -32,7 +35,7 @@ class Message:
         self.role = role.value
         self.content = content
 
-    def to_dict(self):
+    def to_dict(self) -> ChatCompletionMessageParam:
         return {"role": self.role, "content": self.content}
 
 
@@ -48,7 +51,7 @@ class LLMHoneypot:
 
     OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
     DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
-
+    GROK_ENDPOINT = "https://api.x.ai/v1"
 
     def __init__(
             self,
@@ -67,7 +70,20 @@ class LLMHoneypot:
         self.ssh_server_ip = ssh_server_ip
         self.custom_prompt = custom_prompt
         self.session = requests.Session()
-        self.api_endpoint = self.OPENAI_ENDPOINT if self.provider == LLMProvider.OPENAI else self.DEEPSEEK_ENDPOINT
+
+        if self.provider == LLMProvider.OPENAI:
+            self.api_endpoint = self.OPENAI_ENDPOINT
+        elif self.provider == LLMProvider.DEEPSEEK:
+            self.api_endpoint = self.DEEPSEEK_ENDPOINT
+        elif self.provider == LLMProvider.GROK:
+            self.api_endpoint = self.GROK_ENDPOINT
+
+        if self.provider in [LLMProvider.OPENAI, LLMProvider.GROK]:
+            self.llm_client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.GROK_ENDPOINT if self.provider == LLMProvider.GROK else None,
+            )
+
         self.history_store = history_store or UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
         self.sys_prompt = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip) if self.custom_prompt is None else self.custom_prompt)
@@ -116,10 +132,7 @@ class LLMHoneypot:
     def execute_model(self, command: str) -> str:
         messages = self.build_prompt(command)
 
-        if self.provider == LLMProvider.OPENAI or self.provider == LLMProvider.DEEPSEEK:
-            response = self._api_caller(messages)
-        else:
-            raise ValueError("Invalid LLM Provider")
+        response = self._api_caller(messages)
 
         user_msg = Message(Role.USER, command)
         assistant_msg = Message(Role.ASSISTANT, response)
@@ -135,16 +148,26 @@ class LLMHoneypot:
         if self.api_key is None:
             raise ValueError("API key is required")
 
-        payload, headers = self._create_payload(messages)
+        if self.provider in [LLMProvider.OPENAI, LLMProvider.GROK]:
+            chat_messages: List[ChatCompletionMessageParam] = [msg.to_dict() for msg in messages]
+            completion = self.llm_client.chat.completions.create(
+                model=self.model,
+                messages=chat_messages,
+            )
+            content = completion.choices[0].message.content
+        elif self.provider == LLMProvider.DEEPSEEK:
+            payload, headers = self._create_payload(messages)
+            response = self.session.post(self.api_endpoint, json=payload, headers=headers)
+            response_data = response.json()
 
-        response = self.session.post(self.api_endpoint, json=payload, headers=headers)
-        response_data = response.json()
+            if "choices" not in response_data or not response_data["choices"]:
+                raise ValueError("No choices returned from LLM provider")
 
-        if "choices" not in response_data or not response_data["choices"]:
-            raise ValueError("No choices returned from LLM provider")
+            content = response_data["choices"][0]["message"]["content"]
+        else:
+            raise ValueError("Unsupported provider in _api_caller")
 
-        final_response = self._remove_quotes(response_data["choices"][0]["message"]["content"])
-        return final_response
+        return self._remove_quotes(content)
 
 
     def _create_payload(self, messages: List[Message]):
