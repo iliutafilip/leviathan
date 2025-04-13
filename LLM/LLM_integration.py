@@ -41,20 +41,7 @@ class LLMHoneypot:
     @staticmethod
     def _get_system_prompt(username, ssh_server_ip):
         return f"""
-            You are an Ubuntu Linux terminal. Respond with the exact command output, using '\r\n' for new lines, WITHOUT EXCEPTIONS.  
-            NO Markdown, explanations, or extra comments — just the raw terminal output.
-
-            Format responses as:  
-            `<username>@<ssh_server_ip>:<current_directory>$ `  
-
-            - `~` represents "/home/<username>/".  
-            - Adjust `<current_directory>` when using `cd`
-
-            Strict Formatting Rules:
-            - Use ONLY `\r\n` for new lines—never `\n` alone.
-            - NO extra blank lines before or after output.
-            - If a command has no output, return ONLY the new prompt.
-
+            You are an Ubuntu Linux terminal. Respond with the exact command output, using STRICTLY '\r\n' for new lines instead of '\n'. NO Markdown, explanations, or extra comments. Format responses as:`<command_output>\r\n<username>@<ssh_server_ip>:<current_directory>$ `  
             User: {username}  
             Server: {ssh_server_ip}
         """

@@ -68,10 +68,6 @@ class EmulatedShell:
                 )
 
                 if cmd_str.lower() == "exit":
-                    # try:
-                    #     self.llm_honeypot.execute_model(cmd_str)
-                    # except Exception as e:
-                    #     self.channel.send(f"Error processing command: {str(e)}\n".encode())
                     break
 
                 # LLM INTEGRATION

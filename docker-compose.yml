@@ -6,7 +6,7 @@ services:
     container_name: leviathan
 #    restart: always
     ports:
-      - "2222:2222"
+      - "22:2222"
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
