@@ -94,7 +94,7 @@ class LLMHoneypot:
             example_interactions = [
                 Message(Role.USER, "ls"),
                 Message(Role.ASSISTANT,
-                        f"Desktop  Documents  Downloads  Music  Pictures  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
+                        f"Desktop  Documents  Downloads  Music  Pictures  Public  Templates  Videos\r\n{self.username}@{self.ssh_server_ip}:~$ "),
             ]
             self.histories.extend(example_interactions)
 
@@ -188,4 +188,8 @@ class LLMHoneypot:
     @staticmethod
     def _remove_quotes(content: str) -> str:
         regex = re.compile(r"(```( *)?([a-z]*)?(\n)?)")
-        return regex.sub("", content)
+        clean_content = re.sub(regex, "", content)
+
+
+        clean_content = clean_content.lstrip("\r\n")
+        return clean_content

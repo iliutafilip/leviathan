@@ -4,7 +4,7 @@ services:
   leviathan:
     build: .
     container_name: leviathan
-#    restart: always
+    restart: always
     ports:
       - "22:2222"
     volumes:
@@ -12,6 +12,6 @@ services:
       - ./logs:/app/logs
     environment:
       LLM_MODEL: ${LLM_MODEL}
-      OPEN_AI_SECRET_KEY: ${OPEN_AI_SECRET_KEY}
+      OPEN_AI_SECRET_KEY: ${API_SECRET_KEY}
     env_file:
       - .env

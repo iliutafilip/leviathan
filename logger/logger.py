@@ -2,24 +2,32 @@ import json
 import os
 import shutil
 import sys
+import gzip
 from datetime import datetime
 
 LOG_DIR = "logs"
 BASE_LOG_FILE_NAME = "leviathan"
 LOG_FILE = os.path.join(LOG_DIR, f"{BASE_LOG_FILE_NAME}.log")
-MAX_LOG_SIZE = 1024 * 1024 * 40 # 40MB
+MAX_LOG_SIZE = 1024 * 1024 * 100 # 100MB
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
 def rotate_log():
     """
-    Rotates the existing log file when it exceeds the size limit.
+    Rotates and compresses the existing log file when it exceeds the size limit.
     """
     if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > MAX_LOG_SIZE:
-        timestamp = datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
-        new_log_name = f"{BASE_LOG_FILE_NAME}_{timestamp}.log"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_log_name = os.path.join(LOG_DIR, f"{BASE_LOG_FILE_NAME}_{timestamp}.log")
 
         shutil.move(LOG_FILE, new_log_name)
+
+        with open(new_log_name, "rb") as f_in, gzip.open(f"{new_log_name}.gz", "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+        os.remove(new_log_name)
+
+        print(f"[LOGGER] Rotated and compressed log to: {new_log_name}.gz")
 
 
 def log_event(event_id: str,
