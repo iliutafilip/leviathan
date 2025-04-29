@@ -25,7 +25,7 @@ class EmulatedShell:
             char = self.channel.recv(1)
 
             if not char:
-                print(f"[SHELL - DEBUG] Client with {self.src_ip}:{self.src_port} disconnected")
+                print(f"[SHELL] Client with {self.src_ip}:{self.src_port} disconnected")
                 self.channel.send(b'\nConnection lost...\n')
                 log_event(
                     event_id="session_disconnect",
@@ -56,7 +56,7 @@ class EmulatedShell:
                 self.channel.send(b'\n')
 
                 cmd_str = command.strip().decode('utf-8')
-                print(f"[DEBUG - SHELL] Received command: {cmd_str} from {self.src_ip}")
+                print(f"[SHELL] Received command: {cmd_str} from {self.src_ip}")
 
                 log_event(
                     event_id="command_input",

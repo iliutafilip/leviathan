@@ -1,3 +1,4 @@
+ssh_banner: "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
+standard_banner: "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
 authentication:
-  username_regex: "^(admin|root|user[0-9]+)$"
-  password_regex: "^(123456|password|qwerty|azert|robi|root)$"
+  password_regex: "^(123456|Leviathan2|mypass|xbox|azert|robi|root)$"

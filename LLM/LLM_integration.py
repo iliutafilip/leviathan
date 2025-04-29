@@ -167,7 +167,7 @@ class LLMHoneypot:
         else:
             raise ValueError("Unsupported provider in _api_caller")
 
-        return self._remove_quotes(content)
+        return self._clean_content(content)
 
 
     def _create_payload(self, messages: List[Message]):
@@ -186,10 +186,6 @@ class LLMHoneypot:
 
 
     @staticmethod
-    def _remove_quotes(content: str) -> str:
+    def _clean_content(content: str) -> str:
         regex = re.compile(r"(```( *)?([a-z]*)?(\n)?)")
-        clean_content = re.sub(regex, "", content)
-
-
-        clean_content = clean_content.lstrip("\r\n")
-        return clean_content
+        return re.sub(regex, "", content).lstrip("\r\n")

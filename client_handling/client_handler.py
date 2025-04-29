@@ -14,15 +14,14 @@ from emulated_shell.emulated_shell import EmulatedShell
 with open("configs/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-USERNAME_REGEX = config["authentication"]["username_regex"]
 PASSWORD_REGEX = config["authentication"]["password_regex"]
-
-SSH_BANNER = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
+STANDARD_BANNER = config["standard_banner"]
+SSH_BANNER = config["ssh_banner"]
 
 key_path = os.path.expanduser("configs/server.key")
 
 if not os.path.exists(key_path):
-    print("[INFO] Generating new RSA host key...")
+    print("[CLIENT HANDLER] Generating new RSA host key...")
     RSAKey.generate(2048).write_private_key_file(key_path)
 
 host_key = RSAKey(filename=key_path)
@@ -67,12 +66,9 @@ class ClientHandler(paramiko.ServerInterface):
     def check_auth_password(self, username, password):
         self.input_username = username
 
-        username_match = re.match(USERNAME_REGEX, username)
-        password_match = re.match(PASSWORD_REGEX, password)
+        success = bool(re.match(PASSWORD_REGEX, password))
 
-        success = bool(username_match and password_match)
-
-        print(f"[-] Login attempt: {username}:{password} from {self.client_ip} - {'SUCCESS' if success else 'FAILED'}")
+        print(f"[CLIENT HANDLER] Login attempt: {username}:{password} from {self.client_ip} - {'SUCCESS' if success else 'FAILED'}")
 
         if success:
             log_event(
@@ -97,17 +93,17 @@ class ClientHandler(paramiko.ServerInterface):
 
 
     def check_channel_shell_request(self, channel):
-        print(f"[CLIENT HANDLER - DEBUG] Shell request from {self.client_ip}:{self.client_port}")
+        print(f"[CLIENT HANDLER] Shell request from {self.client_ip}:{self.client_port}")
         if self.event:
             self.event.set()
         return True
 
     def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
-        print(f"[CLIENT HANDLER - DEBUG] PTY request received from {self.client_ip}:{self.client_port}")
+        print(f"[CLIENT HANDLER] PTY request received from {self.client_ip}:{self.client_port}")
         return True
 
     def check_channel_exec_request(self, channel, command):
-        print(f"[CLIENT HANDLER - DEBUG] Exec request received from {self.client_ip}:{self.client_port}")
+        print(f"[CLIENT HANDLER] Exec request received from {self.client_ip}:{self.client_port}")
         command = command.decode()
         log_event(
             event_id="command_exec",
@@ -128,8 +124,7 @@ def client_handle(client, addr):
     try:
 
         transport = paramiko.Transport(client)
-        transport.local_version = SSH_BANNER
-
+        transport.local_version = SSH_BANNER if SSH_BANNER != "" else "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
         server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port)
 
         transport.add_server_key(host_key)
@@ -148,15 +143,19 @@ def client_handle(client, addr):
         channel = transport.accept(100)
 
         if channel is None:
-            print(f"[-] No channel was opened for {client_ip}.")
+            print(f"[CLIENT HANDLER] No channel was opened for {client_ip}.")
             return
 
-        print(f"[-] Session started for {client_ip}:{client_port} with session ID: {server.session_id}")
+        print(f"[CLIENT HANDLER] Session started for {client_ip}:{client_port} with session ID: {server.session_id}")
 
         while server.input_username is None:
             time.sleep(0.1)
 
-        standard_banner = b"Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.4.0-128-generic x86_64)\r\r\r\n"
+        if isinstance(STANDARD_BANNER, str) and STANDARD_BANNER.strip() != "":
+            standard_banner = STANDARD_BANNER.encode()
+        else:
+            standard_banner = b"Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
+
         channel.send(standard_banner)
 
         time.sleep(1)
@@ -164,12 +163,12 @@ def client_handle(client, addr):
         server.start_shell(channel)
 
     except Exception as e:
-        print(f"[-] ERROR {e}")
+        print(f"[CLIENT HANDLER ERROR] {e}")
     finally:
         if transport:
             transport.close()
         client.close()
-        print(f"[-] Connection closed for {client_ip}:{client_port}.")
+        print(f"[CLIENT HANDLER] Connection closed for {client_ip}:{client_port}.")
 
 
 def start_server(address, port):
@@ -178,12 +177,12 @@ def start_server(address, port):
     socks.bind((address, port))
 
     socks.listen(100)
-    print(f"[-] SSH Server listening on {address}:{port}")
+    print(f"[CLIENT HANDLER] SSH Server listening on {address}:{port}")
 
     while True:
         try:
             client, address = socks.accept()
-            print(f"[-] Incoming SSH connection from {address[0]}:{address[1]}")
+            print(f"[CLIENT HANDLER] Incoming SSH connection from {address[0]}:{address[1]}")
 
             ssh_thread = threading.Thread(target=client_handle, args=(client, address))
             ssh_thread.start()
