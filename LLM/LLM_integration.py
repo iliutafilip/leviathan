@@ -9,12 +9,14 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from store.user_history_store import UserHistoryStore
 
-with open("configs/llm-config.yaml") as file:
+with open("configs/config.yaml") as file:
     config = yaml.safe_load(file)
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", config.get("llmProvider", "openai")).lower()
-LLM_MODEL = os.getenv("LLM_MODEL", config.get("plugin", {}).get("llmModel", "gpt-4"))
-API_SECRET_KEY = os.getenv("API_SECRET_KEY", config.get("apiSecretKey"))
+llm_config = config.get("llm_config", {})
+
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", llm_config.get("llmProvider", "openai")).lower()
+LLM_MODEL = os.getenv("LLM_MODEL", llm_config.get("llmModel", "gpt-4o-mini"))
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", llm_config.get("apiSecretKey"))
 
 
 class Role(Enum):

@@ -15,8 +15,8 @@ with open("configs/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 PASSWORD_REGEX = config["authentication"]["password_regex"]
-STANDARD_BANNER = config["standard_banner"]
-SSH_BANNER = config["ssh_banner"]
+STANDARD_BANNER = config.get("standard_banner", "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n")
+SSH_BANNER = config.get("ssh_banner", "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5")
 
 key_path = os.path.expanduser("configs/server.key")
 
@@ -124,7 +124,7 @@ def client_handle(client, addr):
     try:
 
         transport = paramiko.Transport(client)
-        transport.local_version = SSH_BANNER if SSH_BANNER != "" else "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
+        transport.local_version = SSH_BANNER
         server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port)
 
         transport.add_server_key(host_key)
@@ -151,12 +151,7 @@ def client_handle(client, addr):
         while server.input_username is None:
             time.sleep(0.1)
 
-        if isinstance(STANDARD_BANNER, str) and STANDARD_BANNER.strip() != "":
-            standard_banner = STANDARD_BANNER.encode()
-        else:
-            standard_banner = b"Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
-
-        channel.send(standard_banner)
+        channel.send(STANDARD_BANNER.encode())
 
         time.sleep(1)
 
