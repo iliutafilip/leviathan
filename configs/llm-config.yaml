@@ -1,0 +1,3 @@
+llmProvider: "openai"
+llmModel: "gpt-4o-mini"
+apiSecretKey: "sk-proj-1234"
