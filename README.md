@@ -22,15 +22,15 @@ To view the leviathan honeypot's output and logs
   docker-compose logs -f leviathan
 ```
 
-## Attacker Session
+## Attacker Session Example
 
 ![Client Session Screenshot](https://github.com/user-attachments/assets/6ac4b158-b6d7-4e23-8dc9-fa3e66277ae2)
 
-## Leviathan Output
+## Leviathan Output Example
 
 ![Image](https://github.com/user-attachments/assets/f1ee77fb-b40a-40be-accc-ecbe0f6344c1)
 
-## Config
+## Configuration
 
 Leviathan honeypot can be configured via the `configs/config.yaml` file.  
 You can edit `configs/config.yaml` to customize your banner, authentication rules, and LLM settings.
