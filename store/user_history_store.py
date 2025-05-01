@@ -52,6 +52,10 @@ class UserHistoryStore:
             self.conn.execute("DELETE FROM history WHERE expire_at IS NOT NULL AND expire_at <= ?", (now,))
             self.conn.commit()
 
+    def close(self):
+        with self.lock:
+            self.conn.close()
+
 
 
 def start_cleanup_loop(store: UserHistoryStore, period: int = 1800):

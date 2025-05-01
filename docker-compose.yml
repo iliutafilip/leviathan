@@ -10,8 +10,10 @@ services:
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
+      - ./store:/app/store
     environment:
+      LLM_PROVIDER: ${LLM_PROVIDER}
       LLM_MODEL: ${LLM_MODEL}
-      OPEN_AI_SECRET_KEY: ${API_SECRET_KEY}
+      API_SECRET_KEY: ${API_SECRET_KEY}
     env_file:
       - .env
