@@ -1,6 +1,6 @@
 # Leviathan LLM-Powered SSH Honeypot                                              
 
-Leviathan is a low-code high-interaction SSH honeypot written in Python that leverages a Large Language Model to emulate realistic shell behavior. It captures attacker interactions and logs them in structured JSON format,
+Leviathan is a low-code high-interaction SSH honeypot written in Python that leverages a Large Language Model to emulate realistic shell behavior. It captures attacker interactions and logs them in structured JSON format.
 
 ## Quick Start Using Docker Compose
 
@@ -17,7 +17,7 @@ Build the Docker images and start the honeypot
   docker-compose build
   docker-compose up -d
 ```
-To view the leviathan honeypot's output and logs:
+To view the leviathan honeypot's output and logs
 ```bash
   docker-compose logs -f leviathan
 ```
