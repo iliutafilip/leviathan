@@ -16,6 +16,8 @@ Pull from git
   make up
 ```
 
+or in detached mode
+
 ```bash
   make up-detached
 ```
