@@ -1,22 +1,10 @@
-import os
 import re
 from enum import Enum
 from typing import List, Optional
 import requests
-import yaml
-from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
 
+from config_parser.config_parser import load_llm_config
 from store.user_history_store import UserHistoryStore
-
-with open("configs/config.yaml") as file:
-    config = yaml.safe_load(file)
-
-llm_config = config.get("llm_config", {})
-
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", llm_config.get("llmProvider", "openai")).lower()
-LLM_MODEL = os.getenv("LLM_MODEL", llm_config.get("llmModel", "gpt-4o-mini"))
-API_SECRET_KEY = os.getenv("API_SECRET_KEY", llm_config.get("apiSecretKey"))
 
 
 class Role(Enum):
@@ -37,40 +25,32 @@ class Message:
         self.role = role.value
         self.content = content
 
-    def to_dict(self) -> ChatCompletionMessageParam:
+    def to_dict(self):
         return {"role": self.role, "content": self.content}
 
 
 class LLMHoneypot:
 
-    @staticmethod
-    def _get_system_prompt(username, ssh_server_ip):
-        return f"""
-            You are an Ubuntu Linux terminal. Respond with the exact command output, using STRICTLY '\r\n' for new lines instead of '\n'. NO Markdown, explanations, or extra comments. Format responses as:`<command_output>\r\n<username>@<ssh_server_ip>:<current_directory>$ `  
-            User: {username}  
-            Server: {ssh_server_ip}
-        """
-
     OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
     DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
-    GROK_ENDPOINT = "https://api.x.ai/v1"
+    GROK_ENDPOINT = "https://api.x.ai/v1/chat/completions"
 
     def __init__(
             self,
             username: str = "unknown",
             ssh_server_ip: str = "127.0.0.1",
-            custom_prompt: Optional[str] = None,
-            provider = None,
-            model = None,
-            api_key = None,
+            config_file_path: Optional[str] = None,
             history_store = None,
     ):
-        self.provider = LLMProvider(LLM_PROVIDER.lower()) if provider is None else LLMProvider(provider.lower())
-        self.model = model or LLM_MODEL
-        self.api_key = api_key or API_SECRET_KEY
+
+        config = load_llm_config(config_file_path)
+        self.provider = LLMProvider(config["llm_provider"])
+        self.model = config["llm_model"]
+        self.api_key = config["api_key"]
+        self.sys_prompt_text = config["system_prompt"]
+
         self.username = username
         self.ssh_server_ip = ssh_server_ip
-        self.custom_prompt = custom_prompt
         self.session = requests.Session()
 
         if self.provider == LLMProvider.OPENAI:
@@ -80,18 +60,12 @@ class LLMHoneypot:
         elif self.provider == LLMProvider.GROK:
             self.api_endpoint = self.GROK_ENDPOINT
 
-        if self.provider in [LLMProvider.OPENAI, LLMProvider.GROK]:
-            self.llm_client = OpenAI(
-                api_key=self.api_key,
-                base_url=self.GROK_ENDPOINT if self.provider == LLMProvider.GROK else None,
-            )
-
         self.history_store = history_store or UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
-        self.sys_prompt = Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip) if self.custom_prompt is None else self.custom_prompt)
+        self.sys_prompt_message = Message(Role.SYSTEM, self._get_system_prompt())
 
         if not self.histories:
-            self.histories.append(self.sys_prompt)
+            self.histories.append(self.sys_prompt_message)
 
             example_interactions = [
                 Message(Role.USER, "ls"),
@@ -103,12 +77,16 @@ class LLMHoneypot:
             self._save_user_history()
 
         start_up = [
-            Message(Role.SYSTEM, self._get_system_prompt(username, ssh_server_ip)),
+            self.sys_prompt_message,
             Message(Role.USER, "cd"),
             Message(Role.ASSISTANT, f"\r\n{self.username}@{self.ssh_server_ip}:~$ "),
         ]
 
         self.histories.extend(start_up)
+
+
+    def _get_system_prompt(self):
+        return self.sys_prompt_text + f" User: {self.username} Server: {self.ssh_server_ip}"
 
     def _load_user_history(self) -> List[Message]:
         history_data = self.history_store.load_user_history(self.username)
@@ -127,7 +105,7 @@ class LLMHoneypot:
     def build_prompt(self, command: str) -> List[Message]:
         messages = []
         messages.extend(self.histories)
-        messages.append(self.sys_prompt)
+        messages.append(self.sys_prompt_message)
         messages.append(Message(Role.USER, command))
         return messages
 
@@ -150,14 +128,7 @@ class LLMHoneypot:
         if self.api_key is None:
             raise ValueError("API key is required")
 
-        if self.provider in [LLMProvider.OPENAI, LLMProvider.GROK]:
-            chat_messages: List[ChatCompletionMessageParam] = [msg.to_dict() for msg in messages]
-            completion = self.llm_client.chat.completions.create(
-                model=self.model,
-                messages=chat_messages,
-            )
-            content = completion.choices[0].message.content
-        elif self.provider == LLMProvider.DEEPSEEK:
+        if self.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK, LLMProvider.GROK]:
             payload, headers = self._create_payload(messages)
             response = self.session.post(self.api_endpoint, json=payload, headers=headers)
             response_data = response.json()

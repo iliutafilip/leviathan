@@ -5,21 +5,19 @@ import uuid
 import socket
 import paramiko
 import re
-import yaml
 from paramiko.rsakey import RSAKey
 
+from config_parser.config_parser import load_client_handler_config
 from logger.logger import log_event
 from emulated_shell.emulated_shell import EmulatedShell
 
-with open("configs/config.yaml", "r") as f:
-    config = yaml.safe_load(f)
+config = load_client_handler_config()
 
-PASSWORD_REGEX = config["authentication"]["password_regex"]
-STANDARD_BANNER = config.get("standard_banner", "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n")
-SSH_BANNER = config.get("ssh_banner", "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5")
+PASSWORD_REGEX = config["password_regex"]
+STANDARD_BANNER = config["standard_banner"]
+SSH_BANNER = config["ssh_banner"]
 
 key_path = os.path.expanduser("configs/server.key")
-
 if not os.path.exists(key_path):
     print("[CLIENT HANDLER] Generating new RSA host key...")
     RSAKey.generate(2048).write_private_key_file(key_path)

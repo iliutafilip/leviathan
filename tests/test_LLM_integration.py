@@ -1,43 +1,25 @@
+import os
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
+import yaml
+
 from LLM.LLM_integration import LLMHoneypot
 from store.user_history_store import UserHistoryStore
+from tests.mock_config_data import get_mock_config
 
 
 class TestLLMHoneypotIntegration(unittest.TestCase):
 
-    @patch("LLM.LLM_integration.OpenAI")
-    def test_execute_model_openai_success(self, mock):
-        mock_choice = MagicMock()
-        mock_choice.message.content = "mock\r\nuser@host:~$ "
+    def setUp(self):
+        self.config_data = get_mock_config()
+        self.temp_config_file = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
+        with open(self.temp_config_file.name, "w") as f:
+            yaml.dump(self.config_data, f)
 
-        mock_completion = MagicMock()
-        mock_completion.choices = [mock_choice]
-
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = mock_completion
-        mock.return_value = mock_client
-
-        user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key", model="model", history_store=user_history)
-
-        output = honeypot.execute_model("ls")
-        self.assertIn("mock", output)
-        self.assertIn("user@host", output)
-
-    @patch("LLM.LLM_integration.OpenAI")
-    def test_execute_model_openai_failure(self, mock):
-        mock.return_value.chat.completions.create.side_effect = ValueError("No choices returned from LLM provider")
-
-        user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key",
-                               model="model", history_store=user_history)
-
-        with self.assertRaises(ValueError) as context:
-            honeypot.execute_model("ls")
-
-        self.assertIn("No choices returned from LLM provider", str(context.exception))
+    def tearDown(self):
+        os.unlink(self.temp_config_file.name)
 
     @patch("LLM.LLM_integration.requests.Session.post")
     def test_execute_model_post_success(self, mock_post):
@@ -54,10 +36,7 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="deepseek", api_key="api_key",
-                               model="model", history_store=user_history)
-
-        print(honeypot.provider)
+        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
 
         output = honeypot.execute_model("ls")
         self.assertIn("mock", output)
@@ -70,27 +49,12 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="deepseek", api_key="api_key", model="model", history_store=user_history)
+        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
 
         with self.assertRaises(ValueError) as context:
             honeypot.execute_model("ls")
 
         self.assertIn("No choices", str(context.exception))
-
-    def test_invalid_provider(self):
-        with self.assertRaises(ValueError) as context:
-            LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="provider")
-
-        self.assertIn("not a valid LLMProvider", str(context.exception))
-
-
-    def test_custom_prompt_build(self):
-        user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", provider="openai", api_key="api_key",
-                               model="model", custom_prompt="act as a linux ubuntu shell", history_store=user_history)
-
-        self.assertEqual("act as a linux ubuntu shell", honeypot.custom_prompt)
-
 
 
 if __name__ == '__main__':
