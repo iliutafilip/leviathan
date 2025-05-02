@@ -43,6 +43,9 @@ schema = {
 }
 
 def load_config_file(config_path):
+    if not config_path:
+        config_path = "configs/config.yaml"
+
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
@@ -52,7 +55,7 @@ def load_config_file(config_path):
 
     return config
 
-def load_llm_config(config_path="configs/config.yaml"):
+def load_llm_config(config_path):
     config = load_config_file(config_path)
     llm_config = config["llm_config"]
     return {
@@ -62,7 +65,7 @@ def load_llm_config(config_path="configs/config.yaml"):
         "system_prompt": llm_config.get("llmSysPrompt") or LLM_DEFAULT_SYS_PROMPT,
     }
 
-def load_client_handler_config(config_path="configs/config.yaml"):
+def load_client_handler_config(config_path):
     config = load_config_file(config_path)
     client_handler_config = config["client_handler_config"]
     return {

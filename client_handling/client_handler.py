@@ -3,19 +3,13 @@ import threading
 import time
 import uuid
 import socket
+from typing import Optional
 import paramiko
 import re
 from paramiko.rsakey import RSAKey
-
 from config_parser.config_parser import load_client_handler_config
 from logger.logger import log_event
 from emulated_shell.emulated_shell import EmulatedShell
-
-config = load_client_handler_config()
-
-PASSWORD_REGEX = config["password_regex"]
-STANDARD_BANNER = config["standard_banner"]
-SSH_BANNER = config["ssh_banner"]
 
 key_path = os.path.expanduser("configs/server.key")
 if not os.path.exists(key_path):
@@ -26,7 +20,7 @@ host_key = RSAKey(filename=key_path)
 
 class ClientHandler(paramiko.ServerInterface):
 
-    def __init__(self, client_ip, client_port, client_version, dst_ip, dst_port, input_username = None,):
+    def __init__(self, client_ip, client_port, client_version, dst_ip, dst_port, input_username = None, config: Optional[dict] = None):
         self.session_id = str(uuid.uuid4())
         self.client_ip = client_ip
         self.client_port = client_port
@@ -36,6 +30,7 @@ class ClientHandler(paramiko.ServerInterface):
         self.event = threading.Event()
         self.emulated_shell = None
         self.input_username = input_username
+        self.password_regex = config["password_regex"]
 
         log_event(
             event_id="session_start",
@@ -49,11 +44,11 @@ class ClientHandler(paramiko.ServerInterface):
     def get_session_id(self):
         return self.session_id
 
-    def start_shell(self, channel):
+    def start_shell(self, channel, config_file: Optional[str] = None):
         if self.input_username is None:
             self.input_username = "unknown"
 
-        self.emulated_shell = EmulatedShell(channel, self.session_id, self.client_ip, self.client_port, username=self.input_username)
+        self.emulated_shell = EmulatedShell(channel, self.session_id, self.client_ip, self.client_port, username=self.input_username, config_file=config_file)
         self.emulated_shell.start_session()
 
     def check_channel_request(self, kind: str, channelid: int) -> int:
@@ -64,7 +59,7 @@ class ClientHandler(paramiko.ServerInterface):
     def check_auth_password(self, username, password):
         self.input_username = username
 
-        success = bool(re.match(PASSWORD_REGEX, password))
+        success = bool(re.match(self.password_regex, password))
 
         print(f"[CLIENT HANDLER] Login attempt: {username}:{password} from {self.client_ip} - {'SUCCESS' if success else 'FAILED'}")
 
@@ -113,17 +108,19 @@ class ClientHandler(paramiko.ServerInterface):
         return True
 
 
-def client_handle(client, addr):
+def client_handle(client, addr, config_file: Optional[str] = None):
     client_ip, client_port = addr
     dst_ip, dst_port = client.getsockname()
+
+    config = load_client_handler_config(config_file)
 
     transport = None
 
     try:
 
         transport = paramiko.Transport(client)
-        transport.local_version = SSH_BANNER
-        server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port)
+        transport.local_version = config["ssh_banner"]
+        server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port, config=config)
 
         transport.add_server_key(host_key)
 
@@ -149,11 +146,11 @@ def client_handle(client, addr):
         while server.input_username is None:
             time.sleep(0.1)
 
-        channel.send(STANDARD_BANNER.encode())
+        channel.send(config["standard_banner"].encode())
 
         time.sleep(1)
 
-        server.start_shell(channel)
+        server.start_shell(channel, config_file=config_file)
 
     except Exception as e:
         print(f"[CLIENT HANDLER ERROR] {e}")
@@ -164,7 +161,7 @@ def client_handle(client, addr):
         print(f"[CLIENT HANDLER] Connection closed for {client_ip}:{client_port}.")
 
 
-def start_server(address, port):
+def start_server(address, port, config_file: Optional[str] = None):
     socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socks.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     socks.bind((address, port))
@@ -177,7 +174,7 @@ def start_server(address, port):
             client, address = socks.accept()
             print(f"[CLIENT HANDLER] Incoming SSH connection from {address[0]}:{address[1]}")
 
-            ssh_thread = threading.Thread(target=client_handle, args=(client, address))
+            ssh_thread = threading.Thread(target=client_handle, args=(client, address, config_file))
             ssh_thread.start()
 
         except Exception as e:
