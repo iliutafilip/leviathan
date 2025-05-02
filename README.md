@@ -38,11 +38,13 @@ You can edit `configs/config.yaml` to customize your banner, authentication rule
 **Example configuration file**
 
 ```yaml
-ssh_banner: "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
-standard_banner: "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
-authentication:
-  password_regex: "^(123456|Leviathan2|mypass|xbox|azert|robi|root)$"
+client_handler_config:
+  ssh_banner: "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
+  standard_banner: "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
+  authentication:
+    password_regex: "^(123456|Leviathan2|mypass|xbox|azert|robi|root)$"
 llm_config:
+  llmCustomSysPrompt: "Act as an Ubuntu shell"
   llmProvider: "openai"
   llmModel: "gpt-4o-mini"
   apiSecretKey: "sk-proj-1234"
@@ -55,3 +57,9 @@ Leviathan Honeypot offers support for **OpenAI, Deepseek or GROK** LLM models th
 ## Ollama Support
 
 TBA
+
+## PyUnit Tests
+
+To run PyUnit tests, run the following:
+
+`python -m unittest discover -s tests`
