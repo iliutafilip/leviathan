@@ -50,6 +50,14 @@ llm_config:
   apiSecretKey: "sk-proj-1234"
 ```
 
+You can also use your own configuration file by running
+
+`make up CONFIG_FILE=./configs/custom.yaml`
+
+or in detached mode
+
+`make up-detached CONFIG_FILE=./configs/custom.yaml`
+
 ## OpenAI Support
 
 Leviathan Honeypot offers support for **OpenAI, Deepseek or GROK** LLM models through **OpenAI** API calls.
