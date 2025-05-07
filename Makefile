@@ -1,14 +1,11 @@
 .PHONY: build up up-detached down restart logs rebuild
 CONFIG_FILE ?= ./configs/config.yaml
-build:
+start:
 	docker compose build
-up:
 	CONFIG_PATH=$(CONFIG_FILE) docker-compose up --build
-up-detached:
-	CONFIG_PATH=$(CONFIG_FILE) docker-compose up --build -d
 logs:
 	docker-compose logs -f
-restart:
-	docker-compose restart
-down:
+stop:
 	docker-compose down
+tests:
+	python3 -m unittest discover -s tests

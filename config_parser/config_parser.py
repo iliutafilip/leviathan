@@ -35,9 +35,9 @@ schema = {
         "required": True,
         "schema": {
             "llmCustomSysPrompt": {"type": "string", "required": False, "nullable": True},
-            "llmProvider": {"type": "string", "required": True, "allowed": ["openai", "deepseek", "grok"]},
+            "llmProvider": {"type": "string", "required": True, "allowed": ["openai", "deepseek", "grok", "ollama"]},
             "llmModel": {"type": "string", "required": True},
-            "apiSecretKey": {"type": "string", "required": True},
+            "apiSecretKey": {"type": "string", "required": False, "nullable": True},
         },
     },
 }

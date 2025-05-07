@@ -13,50 +13,12 @@ Pull from git
 ### Using Makefile
 
 ```bash
-  make up
+  make start
 ```
 
-or in detached mode
-
+To shut down and remove container:
 ```bash
-  make up-detached
-```
-
-To view the leviathan output and logs in real-time:
-```bash
-  make logs
-```
-
-To restart container:
-```bash
-  make restart
-```
-
-To shutdown and remove container:
-```bash
-  make down
-```
-
-### Using Docker Compose Directly
-
-```bash
-  docker-compose build
-  docker-compose up -d
-```
-
-To view the leviathan output and logs in real-time:
-```bash
-  docker-compose logs -f leviathan
-```
-
-To restart container:
-```bash
-  docker-compose restart
-```
-
-To shutdown and remove container:
-```bash
-  docker-compose down
+  make stop
 ```
 
 ## Attacker Session Example
@@ -97,14 +59,16 @@ or in detached mode
 
 ## OpenAI Support
 
-Leviathan Honeypot offers support for **OpenAI, Deepseek or GROK** LLM models through **OpenAI** API calls.
+Leviathan Honeypot offers support for **OpenAI, Deepseek** or **GROK** LLM models through **OpenAI** API calls.
 
 ## Ollama Support
 
-TBA
+Leviathan also supports running LLMs locally using **Ollama**.
+
+The default Ollama endpoint used is: `http://localhost:11434/api/generate`
 
 ## PyUnit Tests
 
 To run PyUnit tests, run the following:
 
-`python -m unittest discover -s tests`
+`make tests`

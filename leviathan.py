@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     try:
         print(title)
-        print("[-] Leviathan running...")
+        print("Leviathan running...")
 
         history_store = UserHistoryStore()
         atexit.register(history_store.close)

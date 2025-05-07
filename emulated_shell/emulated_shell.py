@@ -59,24 +59,44 @@ class EmulatedShell:
                 cmd_str = command.strip().decode('utf-8')
                 print(f"[SHELL] Received command: {cmd_str} from {self.src_ip}")
 
-                log_event(
-                    event_id="command_input",
-                    session_id=self.session_id,
-                    src_ip=self.src_ip,
-                    src_port=self.src_port,
-                    username=self.username,
-                    command=cmd_str
-                )
-
                 if cmd_str.lower() == "exit":
+                    log_event(
+                        event_id="command_input",
+                        session_id=self.session_id,
+                        src_ip=self.src_ip,
+                        src_port=self.src_port,
+                        username=self.username,
+                        command=cmd_str,
+                    )
                     break
 
                 # LLM INTEGRATION
                 try:
                     response = self.llm_honeypot.execute_model(cmd_str)
+
+                    log_event(
+                        event_id="command_input",
+                        session_id=self.session_id,
+                        src_ip=self.src_ip,
+                        src_port=self.src_port,
+                        username=self.username,
+                        command=cmd_str,
+                        response=response
+                    )
+
                     self.channel.send(response.encode())
                 except Exception as e:
-                    self.channel.send(f"Error processing command: {str(e)}\n".encode())
+                    self.channel.send(f"Error processing command".encode())
+
+                    log_event(
+                        event_id="command_error",
+                        session_id=self.session_id,
+                        src_ip=self.src_ip,
+                        src_port=self.src_port,
+                        username=self.username,
+                        command=cmd_str,
+                        response=f"LLM error: {str(e)}"
+                    )
 
                 command = b""
 

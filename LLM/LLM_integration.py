@@ -17,6 +17,7 @@ class LLMProvider(Enum):
     OPENAI = "openai"
     DEEPSEEK = "deepseek"
     GROK = "grok"
+    OLLAMA = "ollama"
     INVALID_PROVIDER = "invalid_provider"
 
 
@@ -34,6 +35,7 @@ class LLMHoneypot:
     OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
     DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
     GROK_ENDPOINT = "https://api.x.ai/v1/chat/completions"
+    OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
 
     def __init__(
             self,
@@ -59,6 +61,8 @@ class LLMHoneypot:
             self.api_endpoint = self.DEEPSEEK_ENDPOINT
         elif self.provider == LLMProvider.GROK:
             self.api_endpoint = self.GROK_ENDPOINT
+        elif self.provider == LLMProvider.OLLAMA:
+            self.api_endpoint = self.OLLAMA_ENDPOINT
 
         self.history_store = history_store or UserHistoryStore()
         self.histories: List[Message] = self._load_user_history()
@@ -125,18 +129,22 @@ class LLMHoneypot:
         return response
 
     def _api_caller(self, messages: List[Message]):
-        if self.api_key is None:
-            raise ValueError("API key is required")
+        if self.provider != LLMProvider.OLLAMA:
+            if self.api_key is None:
+                raise ValueError("API key is required")
 
-        if self.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK, LLMProvider.GROK]:
+        if self.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK, LLMProvider.GROK, LLMProvider.OLLAMA]:
             payload, headers = self._create_payload(messages)
             response = self.session.post(self.api_endpoint, json=payload, headers=headers)
             response_data = response.json()
 
-            if "choices" not in response_data or not response_data["choices"]:
-                raise ValueError("No choices returned from LLM provider")
+            if self.provider == LLMProvider.OLLAMA:
+                content = response_data.get("message", {}).get("content", "")
+            else:
+                if "choices" not in response_data or not response_data["choices"]:
+                    raise ValueError("No choices returned from LLM provider")
 
-            content = response_data["choices"][0]["message"]["content"]
+                content = response_data["choices"][0]["message"]["content"]
         else:
             raise ValueError("Unsupported provider in _api_caller")
 
@@ -151,9 +159,11 @@ class LLMHoneypot:
         }
 
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
+
+        if self.provider in [LLMProvider.OPENAI, LLMProvider.DEEPSEEK, LLMProvider.GROK]:
+            headers["Authorization"] = f"Bearer {self.api_key}"
 
         return payload, headers
 

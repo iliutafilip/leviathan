@@ -7,7 +7,7 @@ import yaml
 
 from LLM.LLM_integration import LLMHoneypot
 from store.user_history_store import UserHistoryStore
-from tests.mock_config_data import get_mock_config
+from tests.mock_config_data import get_mock_config, get_mock_ollama_config
 
 
 class TestLLMHoneypotIntegration(unittest.TestCase):
@@ -36,7 +36,7 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
 
         output = honeypot.execute_model("ls")
         self.assertIn("mock", output)
@@ -49,12 +49,35 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Tset", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
 
         with self.assertRaises(ValueError) as context:
             honeypot.execute_model("ls")
 
         self.assertIn("No choices", str(context.exception))
+
+    @patch("LLM.LLM_integration.requests.Session.post")
+    def test_execute_model_ollama_success(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "message": {
+                "role": "assistant",
+                "content": "ollama output\r\nuser@host:~$ "
+            }
+        }
+        mock_post.return_value = mock_response
+
+        ollama_config = get_mock_ollama_config()
+        with open(self.temp_config_file.name, "w") as f:
+            yaml.dump(ollama_config, f)
+
+        user_history = UserHistoryStore("store/test_user_history.db")
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name,
+                               history_store=user_history)
+
+        output = honeypot.execute_model("whoami")
+        self.assertIn("ollama output", output)
+        self.assertIn("user@host", output)
 
 
 if __name__ == '__main__':

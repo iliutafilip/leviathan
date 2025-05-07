@@ -41,6 +41,7 @@ def log_event(event_id: str,
               password: str = None,
               command: str = None,
               message: str = None,
+              response: str = None,
               ) -> None:
     """
     Logs an event in JSON format.
@@ -82,6 +83,8 @@ def log_event(event_id: str,
         log_entry["command"] = command
     if message is not None:
         log_entry["message"] = message
+    if response is not None:
+        log_entry["response"] = response
 
     log_json = json.dumps(log_entry)
 
