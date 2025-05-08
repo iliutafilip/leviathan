@@ -58,12 +58,18 @@ def load_config_file(config_path):
 def load_llm_config(config_path):
     config = load_config_file(config_path)
     llm_config = config["llm_config"]
+
+    llm_provider_env = os.getenv("LLM_PROVIDER", "").strip()
+    llm_model_env = os.getenv("LLM_MODEL", "").strip()
+    api_key_env = os.getenv("API_SECRET_KEY", "").strip()
+
     return {
-        "llm_provider": os.getenv("LLM_PROVIDER", llm_config.get("llmProvider", "openai")).lower(),
-        "llm_model": os.getenv("LLM_MODEL", llm_config.get("llmModel")),
-        "api_key": os.getenv("API_SECRET_KEY", llm_config.get("apiSecretKey")),
+        "llm_provider": (llm_provider_env or llm_config.get("llmProvider", "openai")).lower(),
+        "llm_model": llm_model_env or llm_config.get("llmModel"),
+        "api_key": api_key_env or llm_config.get("apiSecretKey"),
         "system_prompt": llm_config.get("llmSysPrompt") or LLM_DEFAULT_SYS_PROMPT,
     }
+
 
 def load_client_handler_config(config_path):
     config = load_config_file(config_path)

@@ -15,7 +15,5 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER}
       LLM_MODEL: ${LLM_MODEL}
       API_SECRET_KEY: ${API_SECRET_KEY}
-    env_file:
-      - .env
     command: ["python", "-u", "leviathan.py", "-a", "0.0.0.0", "-p", "2222", "-c", "${CONFIG_PATH:-/app/configs/config.yaml}"]
 

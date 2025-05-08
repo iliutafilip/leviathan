@@ -12,22 +12,20 @@ Pull from git
 
 ### Using Makefile
 
+To start up the honeypot:
 ```bash
   make start
+```
+or in detached mode:
+
+```bash
+  make start-detached
 ```
 
 To shut down and remove container:
 ```bash
   make stop
 ```
-
-## Attacker Session Example
-
-![Client Session Screenshot](https://github.com/user-attachments/assets/6ac4b158-b6d7-4e23-8dc9-fa3e66277ae2)
-
-## Leviathan Output Example
-
-![Image](https://github.com/user-attachments/assets/f1ee77fb-b40a-40be-accc-ecbe0f6344c1)
 
 ## Configuration
 
@@ -51,11 +49,27 @@ llm_config:
 
 You can override the default configuration file with a custom one:
 
-`make up CONFIG_FILE=./configs/custom.yaml`
+`make start CONFIG_FILE=./configs/custom.yaml`
 
-or in detached mode
+or in detached mode:
 
-`make up-detached CONFIG_FILE=./configs/custom.yaml`
+`make start-detached CONFIG_FILE=./configs/custom.yaml`
+
+You can also set the LLM provider, model and API key as environment variables using a `.env` file:
+
+```bash
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+API_SECRET_KEY=sk-proj-1234
+```
+
+## Attacker Session Example
+
+![Client Session Screenshot](https://github.com/user-attachments/assets/6ac4b158-b6d7-4e23-8dc9-fa3e66277ae2)
+
+## Leviathan Output Example
+
+![Image](https://github.com/user-attachments/assets/f1ee77fb-b40a-40be-accc-ecbe0f6344c1)
 
 ## OpenAI Support
 
