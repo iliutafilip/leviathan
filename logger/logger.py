@@ -4,6 +4,8 @@ import shutil
 import sys
 import gzip
 from datetime import datetime
+from dotenv import load_dotenv
+from elasticsearch import Elasticsearch
 
 LOG_DIR = "logs"
 BASE_LOG_FILE_NAME = "leviathan"
@@ -11,6 +13,20 @@ LOG_FILE = os.path.join(LOG_DIR, f"{BASE_LOG_FILE_NAME}.log")
 MAX_LOG_SIZE = 1024 * 1024 * 100 # 100MB
 
 os.makedirs(LOG_DIR, exist_ok=True)
+
+load_dotenv()
+
+ELK_ENABLED = os.getenv("ELK_ENABLED", "false").lower() == "true"
+ES_HOST = os.getenv("ES_HOST", "http://localhost:9200")
+INDEX_NAME = "leviathan-logs"
+
+es = None
+if ELK_ENABLED:
+    try:
+        es = Elasticsearch(ES_HOST)
+    except Exception as e:
+        print(f"[LOGGER] Elasticsearch connection failed: {e}")
+        ELK_ENABLED = False
 
 def rotate_log():
     """
@@ -92,6 +108,18 @@ def log_event(event_id: str,
         f.write(log_json + "\n")
 
     print(log_json, file=sys.stdout)
+
+    send_to_elasticsearch(log_entry)
+
+
+def send_to_elasticsearch(log_entry: dict):
+    if not ELK_ENABLED or es is None:
+        return
+    try:
+        print(f"[LOGGER] Sending to Elasticsearch: {log_entry}")
+        es.index(index=INDEX_NAME, document=log_entry)
+    except Exception as e:
+        print(f"[LOGGER] Failed to send log to Elasticsearch: {e}")
 
 
 def clear_log_file():

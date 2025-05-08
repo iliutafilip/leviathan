@@ -2,29 +2,32 @@
 
 Leviathan is a low-code high-interaction SSH honeypot written in Python that leverages a Large Language Model to emulate realistic shell behavior. It captures attacker interactions and logs them in structured JSON format.
 
-## Quick Start
+## Startup
 
 Pull from git
-
 ```bash
   git clone https://github.com/iliutafilip/leviathan.git
+  cd leviathan
 ```
 
-### Using Makefile
-
-To start up the honeypot:
+To start the honeypot run:
 ```bash
-  make start
-```
-or in detached mode:
-
-```bash
-  make start-detached
+  ./setup.sh
 ```
 
-To shut down and remove container:
+To shut down and remove containers:
 ```bash
-  make stop
+  docker-compose down
+```
+
+To temporarily stop the docker container:
+```bash
+   docker-compose stop
+```
+
+To see Leviathan logs in real time run the following command:
+```bash
+   docker-compose logs -f leviathan
 ```
 
 ## Configuration
@@ -49,11 +52,9 @@ llm_config:
 
 You can override the default configuration file with a custom one:
 
-`make start CONFIG_FILE=./configs/custom.yaml`
-
-or in detached mode:
-
-`make start-detached CONFIG_FILE=./configs/custom.yaml`
+```bash
+   ./setup.sh ./configs/custom.yaml
+```
 
 You can also set the LLM provider, model and API key as environment variables using a `.env` file:
 
@@ -71,6 +72,16 @@ API_SECRET_KEY=sk-proj-1234
 
 ![Image](https://github.com/user-attachments/assets/f1ee77fb-b40a-40be-accc-ecbe0f6344c1)
 
+## Kibana Dashboard for Log Visualisation
+
+Leviathan includes a prebuilt Kibana dashboard available at http://localhost:8080.  
+
+The dashboard provides:
+- Total number of attacker sessions
+- Username/password tag clouds
+- Histogram of attacks over time
+- Command distributions
+
 ## OpenAI Support
 
 Leviathan Honeypot offers support for **OpenAI, Deepseek** or **GROK** LLM models through **OpenAI** API calls.
@@ -85,4 +96,4 @@ The default Ollama endpoint used is: `http://localhost:11434/api/generate`
 
 To run PyUnit tests, run the following:
 
-`make tests`
+`python3 -m unittest discover -s tests`
