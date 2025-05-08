@@ -80,7 +80,7 @@ The dashboard provides:
 - Total number of attacker sessions
 - Username/password tag clouds
 - Histogram of attacks over time
-- Command distributions
+- Attacker commands distribution
 
 ## OpenAI Support
 
