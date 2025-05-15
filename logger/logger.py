@@ -72,6 +72,8 @@ def log_event(event_id: str,
     :param username: username used for logging in
     :param password: password used for logging in
     :param command: input command
+    :param message: message
+    :param response: LLM response
     """
 
     rotate_log()

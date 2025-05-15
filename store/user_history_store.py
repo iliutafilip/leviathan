@@ -1,6 +1,5 @@
 import sqlite3
 import threading
-import time
 from datetime import datetime, timedelta
 
 
@@ -55,24 +54,3 @@ class UserHistoryStore:
     def close(self):
         with self.lock:
             self.conn.close()
-
-
-
-def start_cleanup_loop(store: UserHistoryStore, period: int = 1800):
-    '''
-    starts a loop which periodically cleans up the user's history
-    default period is 30 minutes
-    :param store: user history store
-    :param period: period length in seconds; default is 1800s = 30min
-    :return:
-    '''
-    def cleanup_loop():
-        while True:
-            try:
-                store.cleanup()
-            except Exception as e:
-                print(f"[-] Cleanup error: {e}")
-            time.sleep(period)
-
-    thread = threading.Thread(target=cleanup_loop, daemon=True)
-    thread.start()

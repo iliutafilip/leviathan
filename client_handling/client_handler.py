@@ -2,7 +2,6 @@ import os
 import threading
 import time
 import uuid
-import socket
 from typing import Optional
 import paramiko
 import re
@@ -84,7 +83,6 @@ class ClientHandler(paramiko.ServerInterface):
             )
             return paramiko.common.AUTH_FAILED
 
-
     def check_channel_shell_request(self, channel):
         print(f"[CLIENT HANDLER] Shell request from {self.client_ip}:{self.client_port}")
         if self.event:
@@ -159,23 +157,3 @@ def client_handle(client, addr, config_file: Optional[str] = None):
             transport.close()
         client.close()
         print(f"[CLIENT HANDLER] Connection closed for {client_ip}:{client_port}.")
-
-
-def start_server(address, port, config_file: Optional[str] = None):
-    socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socks.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    socks.bind((address, port))
-
-    socks.listen(100)
-    print(f"[CLIENT HANDLER] SSH Server listening on {address}:{port}")
-
-    while True:
-        try:
-            client, address = socks.accept()
-            print(f"[CLIENT HANDLER] Incoming SSH connection from {address[0]}:{address[1]}")
-
-            ssh_thread = threading.Thread(target=client_handle, args=(client, address, config_file))
-            ssh_thread.start()
-
-        except Exception as e:
-            print(e)
