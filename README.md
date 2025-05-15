@@ -82,6 +82,8 @@ The dashboard provides:
 - Histogram of attacks over time
 - Attacker commands distribution
 
+![Image](https://github.com/user-attachments/assets/19e121e5-c9ca-4af7-a54d-ee33217b7b88)
+
 ## OpenAI Support
 
 Leviathan Honeypot offers support for **OpenAI, Deepseek** or **GROK** LLM models through **OpenAI** API calls.
