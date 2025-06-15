@@ -86,7 +86,7 @@ class EmulatedShell:
 
                     self.channel.send(response.encode())
                 except Exception as e:
-                    self.channel.send(f"Error processing command".encode())
+                    self.channel.send(f"Error processing command\r\n".encode())
                     log_event(
                         event_id="command_error",
                         session_id=self.session_id,
