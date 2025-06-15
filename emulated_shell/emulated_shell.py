@@ -87,7 +87,6 @@ class EmulatedShell:
                     self.channel.send(response.encode())
                 except Exception as e:
                     self.channel.send(f"Error processing command".encode())
-
                     log_event(
                         event_id="command_error",
                         session_id=self.session_id,
@@ -97,6 +96,7 @@ class EmulatedShell:
                         command=cmd_str,
                         response=f"LLM error: {str(e)}"
                     )
+                    break
 
                 command = b""
 
