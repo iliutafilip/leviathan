@@ -49,3 +49,6 @@ echo "Kibana is ready!"
 echo "Access Kibana: http://localhost:8080"
 echo "User: leviathan"
 echo "Password: leviathan"
+echo "Streaming Leviathan logs. Pres Ctrl-C to exit."
+
+docker-compose logs -f leviathan
