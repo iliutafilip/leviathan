@@ -41,15 +41,15 @@ class LLMHoneypot:
             self,
             username: str = "unknown",
             ssh_server_ip: str = "127.0.0.1",
-            config_file_path: Optional[str] = None,
+            config = None,
             history_store = None,
     ):
 
-        config = load_llm_config(config_file_path)
-        self.provider = LLMProvider(config["llm_provider"])
-        self.model = config["llm_model"]
-        self.api_key = config["api_key"]
-        self.sys_prompt_text = config["system_prompt"]
+        llm_config = load_llm_config(config)
+        self.provider = LLMProvider(llm_config["llm_provider"])
+        self.model = llm_config["llm_model"]
+        self.api_key = llm_config["api_key"]
+        self.sys_prompt_text = llm_config["system_prompt"]
 
         self.username = username
         self.ssh_server_ip = ssh_server_ip

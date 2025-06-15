@@ -20,6 +20,14 @@ export CONFIG_PATH
 
 docker-compose up -d --build
 
+sleep 2
+if ! docker ps --filter "name=leviathan" --filter "status=running" | grep -q leviathan; then
+    echo "Leviathan container exited (invalid config?)."
+    docker logs leviathan
+    exit 1
+fi
+
+
 echo "Waiting for Kibana..."
 until curl -s http://localhost:5601/api/status | grep -q '"level":"available"'; do
     printf "."

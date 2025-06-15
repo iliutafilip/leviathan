@@ -6,14 +6,14 @@ import socket
 
 class EmulatedShell:
 
-    def __init__(self, channel, session_id, src_ip, src_port, username, config_file: Optional[str] = None):
+    def __init__(self, channel, session_id, src_ip, src_port, username, config):
         print(f"[SHELL] Emulated shell initialized")
         self.session_id = session_id
         self.src_ip = src_ip
         self.src_port = src_port
         self.channel = channel
         self.username = username
-        self.llm_honeypot = LLMHoneypot(username, socket.gethostbyname(socket.gethostname()), config_file_path=config_file)
+        self.llm_honeypot = LLMHoneypot(username, socket.gethostbyname(socket.gethostname()), config=config)
 
 
     def start_session(self):

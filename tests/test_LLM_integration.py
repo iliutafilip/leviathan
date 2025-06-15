@@ -7,6 +7,7 @@ import yaml
 
 from LLM.LLM_integration import LLMHoneypot
 from store.user_history_store import UserHistoryStore
+from config_parser.config_parser import load_config_file
 from tests.mock_config_data import get_mock_config, get_mock_ollama_config
 
 
@@ -17,6 +18,8 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         self.temp_config_file = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
         with open(self.temp_config_file.name, "w") as f:
             yaml.dump(self.config_data, f)
+
+        self.loaded_config = load_config_file(self.temp_config_file.name)
 
     def tearDown(self):
         os.unlink(self.temp_config_file.name)
@@ -36,7 +39,7 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config=self.loaded_config, history_store=user_history)
 
         output = honeypot.execute_model("ls")
         self.assertIn("mock", output)
@@ -49,7 +52,7 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name, history_store=user_history)
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config=self.loaded_config, history_store=user_history)
 
         with self.assertRaises(ValueError) as context:
             honeypot.execute_model("ls")
@@ -71,8 +74,10 @@ class TestLLMHoneypotIntegration(unittest.TestCase):
         with open(self.temp_config_file.name, "w") as f:
             yaml.dump(ollama_config, f)
 
+        loaded_ollama_config = load_config_file(self.temp_config_file.name)
+
         user_history = UserHistoryStore("store/test_user_history.db")
-        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config_file_path=self.temp_config_file.name,
+        honeypot = LLMHoneypot(username="Test", ssh_server_ip="127.0.0.1", config=loaded_ollama_config,
                                history_store=user_history)
 
         output = honeypot.execute_model("whoami")

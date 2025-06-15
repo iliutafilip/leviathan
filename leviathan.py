@@ -5,6 +5,7 @@ import threading
 import time
 from typing import Optional
 
+from config_parser.config_parser import load_config_file
 from client_handling.client_handler import client_handle
 from store.user_history_store import UserHistoryStore
 
@@ -23,6 +24,13 @@ title = """
 
 
 def start_server(address, port, config_file: Optional[str] = None):
+    
+    try:
+        config = load_config_file(config_file)
+    except ValueError as e:
+        print(f"[SSH Server] Failed to load config: {e}")
+        exit(1)
+
     socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socks.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     socks.bind((address, port))
@@ -35,7 +43,7 @@ def start_server(address, port, config_file: Optional[str] = None):
             client, address = socks.accept()
             print(f"[SSH Server] Incoming SSH connection from {address[0]}:{address[1]}")
 
-            ssh_thread = threading.Thread(target=client_handle, args=(client, address, config_file))
+            ssh_thread = threading.Thread(target=client_handle, args=(client, address, config))
             ssh_thread.start()
 
         except Exception as e:

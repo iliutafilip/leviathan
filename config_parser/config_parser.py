@@ -14,6 +14,10 @@ DEFAULT_SSH_BANNER = (
     "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
 )
 
+DEFAULT_PASSWORD_REGEX = (
+    "^(123456|root)$"
+)
+
 schema = {
     "client_handler_config": {
         "type": "dict",
@@ -25,7 +29,7 @@ schema = {
                 "type": "dict",
                 "required": True,
                 "schema": {
-                    "password_regex": {"type": "string", "required": True},
+                    "password_regex": {"type": "string", "required": False},
                 },
             },
             },
@@ -45,7 +49,7 @@ schema = {
 def load_config_file(config_path):
     if not config_path:
         config_path = "configs/config.yaml"
-
+    
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
@@ -55,8 +59,7 @@ def load_config_file(config_path):
 
     return config
 
-def load_llm_config(config_path):
-    config = load_config_file(config_path)
+def load_llm_config(config):
     llm_config = config["llm_config"]
 
     llm_provider_env = os.getenv("LLM_PROVIDER", "").strip()
@@ -67,17 +70,16 @@ def load_llm_config(config_path):
         "llm_provider": (llm_provider_env or llm_config.get("llmProvider", "openai")).lower(),
         "llm_model": llm_model_env or llm_config.get("llmModel"),
         "api_key": api_key_env or llm_config.get("apiSecretKey"),
-        "system_prompt": llm_config.get("llmSysPrompt") or LLM_DEFAULT_SYS_PROMPT,
+        "system_prompt": llm_config.get("llmCustomSysPrompt") or LLM_DEFAULT_SYS_PROMPT,
     }
 
 
-def load_client_handler_config(config_path):
-    config = load_config_file(config_path)
+def load_client_handler_config(config):
     client_handler_config = config["client_handler_config"]
     return {
         "ssh_banner": client_handler_config.get("ssh_banner") or DEFAULT_SSH_BANNER,
         "standard_banner": client_handler_config.get("standard_banner") or DEFAULT_STANDARD_BANNER,
-        "password_regex": client_handler_config.get("authentication").get("password_regex"),
+        "password_regex": client_handler_config.get("authentication").get("password_regex") or DEFAULT_PASSWORD_REGEX,
     }
 
 

@@ -4,7 +4,6 @@ def get_mock_config():
             "ssh_banner": None,
             "standard_banner": None,
             "authentication": {
-                "password_regex": "^(test123|admin)$"
             }
         },
         "llm_config": {
@@ -31,3 +30,22 @@ def get_mock_ollama_config():
             "apiSecretKey": None
         }
     }
+
+def get_incorrect_mock_config():
+    """
+    missing required `llmModel` field in llm_config
+    """
+    return {
+        "client_handler_config": {
+            "ssh_banner": "SSH-2.0-TestBanner",
+            "standard_banner": "Welcome to test banner",
+            "authentication": {
+            },
+        },
+        "llm_config": {
+            "llmProvider": "openai",
+            # "llmModel" is missing here → invalid
+            "apiSecretKey": "test-key"
+        }
+    }
+

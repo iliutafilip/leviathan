@@ -43,11 +43,11 @@ class ClientHandler(paramiko.ServerInterface):
     def get_session_id(self):
         return self.session_id
 
-    def start_shell(self, channel, config_file: Optional[str] = None):
+    def start_shell(self, channel, config):
         if self.input_username is None:
             self.input_username = "unknown"
 
-        self.emulated_shell = EmulatedShell(channel, self.session_id, self.client_ip, self.client_port, username=self.input_username, config_file=config_file)
+        self.emulated_shell = EmulatedShell(channel, self.session_id, self.client_ip, self.client_port, username=self.input_username, config=config)
         self.emulated_shell.start_session()
 
     def check_channel_request(self, kind: str, channelid: int) -> int:
@@ -106,19 +106,19 @@ class ClientHandler(paramiko.ServerInterface):
         return True
 
 
-def client_handle(client, addr, config_file: Optional[str] = None):
+def client_handle(client, addr, config):
     client_ip, client_port = addr
     dst_ip, dst_port = client.getsockname()
-
-    config = load_client_handler_config(config_file)
+  
+    client_config = load_client_handler_config(config)
 
     transport = None
 
     try:
 
         transport = paramiko.Transport(client)
-        transport.local_version = config["ssh_banner"]
-        server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port, config=config)
+        transport.local_version = client_config["ssh_banner"]
+        server = ClientHandler(client_ip, client_port, None, dst_ip, dst_port, config=client_config)
 
         transport.add_server_key(host_key)
 
@@ -144,11 +144,11 @@ def client_handle(client, addr, config_file: Optional[str] = None):
         while server.input_username is None:
             time.sleep(0.1)
 
-        channel.send(config["standard_banner"].encode())
+        channel.send(client_config["standard_banner"].encode())
 
         time.sleep(1)
 
-        server.start_shell(channel, config_file=config_file)
+        server.start_shell(channel, config=config)
 
     except Exception as e:
         print(f"[CLIENT HANDLER ERROR] {e}")
