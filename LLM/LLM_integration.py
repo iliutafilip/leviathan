@@ -170,5 +170,5 @@ class LLMHoneypot:
 
     @staticmethod
     def _clean_content(content: str) -> str:
-        regex = re.compile(r"(```( *)?([a-z]*)?(\n)?)")
-        return re.sub(regex, "", content).lstrip("\r\n")
+        return content.replace('\n', '\r\n').lstrip('\r\n')
+
