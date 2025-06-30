@@ -3,8 +3,7 @@ import yaml
 from cerberus import Validator
 
 LLM_DEFAULT_SYS_PROMPT = (
-    "You are an Ubuntu Linux terminal. Respond with the exact command output, using STRICTLY '\r\n' for new lines instead of '\n'. NO Markdown, explanations, or extra comments. Format responses as:`<command_output>\r\n<username>@<ssh_server_ip>:<current_directory>$ `"
-)
+    "You are an Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64) Linux terminal. Respond with the exact command output, using STRICTLY '\r\n' for new lines instead of '\n'. NO Markdown, explanations, or extra comments. Format responses as:`<command_output>\r\n<username>@<ssh_server_ip>:<current_directory>$ ` Always end the user prompt with a white space after `$`.")
 
 DEFAULT_STANDARD_BANNER = (
     "Welcome to Ubuntu 24.04.2 LTS (GNU/Linux 6.8.0-1027-generic x86_64)\r\n* Documentation:  https://help.ubuntu.com\r\n* Management:     https://landscape.canonical.com\r\n* Support:        https://ubuntu.com/pro\r\n"
